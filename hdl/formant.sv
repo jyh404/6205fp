@@ -38,12 +38,6 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) formant(
 	logic [I_WIDTH-1:0] B_read_address [0:FORMANTS-1];
 	logic [BIT_WIDTH-1:0] B_output_data [0:FORMANTS-1];
 
-	// phi functions
-	logic [BIT_WIDTH-1:0] t_left [0:2][0:FORMANTS-1];
-	logic [BIT_WIDTH-1:0] t_right [0:2][0:FORMANTS-1];
-	logic [BIT_WIDTH-1:0] phi_output [0:FORMANTS-1];
-	logic phi_output_valid;
-
 	generate
 		genvar i;
 		for (i = 0; i < NU_VALUES; ++i) begin
@@ -60,7 +54,7 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) formant(
 				.dina(T_input_data[i]),     // Port A RAM input data
 				.wea(T_input_data_valid),       // Port A write enable
 				//reading port:
-				.addrb(T_read_address[i]),   // Port B address bus,
+				.addrb(T_read_address),   // Port B address bus,
 				.doutb(T_output_data[i]),    // Port B RAM output data,
 				.douta(),   // Port A RAM output data, width determined from RAM_WIDTH
 				.dinb(16'b0),     // Port B RAM input data, width determined from RAM_WIDTH
@@ -152,27 +146,20 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) formant(
 				.regcea(1'b1), // Port A output register enable
 				.regceb(1'b1) // Port B output register enable
 			);
-
-			phi #(
-				.BIT_WIDTH(BIT_WIDTH),
-				.I(I),
-				.FORMANTS(FORMANTS)
-			)
-			phi_func
-			(
-				.clk_in(clk_in),
-				.rst_in(rst_in),
-				.left()
-			)
 		end
   	endgenerate
 
-	typedef enum {START, T_CALC, F_CALC, SEGMENT_CALC, PHI_CALC} state;
+	typedef enum {START, T_CALC, F_CALC, SEGMENT_CALC, PHI_CALC, FINAL} state;
 
 	logic [I_WIDTH-1:0] current_i;
 	logic [I_WIDTH-1:0] segment_values [0:FORMANTS];
 	logic [$clog2(FORMANTS)-1:0] segment;
 	logic [1:0] delay;
+
+	// phi functions
+	logic phi_input_valid;
+	logic [BIT_WIDTH-1:0] phi_output [0:FORMANTS-1];
+	logic phi_output_valid;
 
 	always_ff @(posedge clk_in) begin
 		if (rst_in) begin
@@ -220,10 +207,31 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) formant(
 						end
 					end else begin
 						state <= PHI_CALC;
+						delay <= 2'b10;
+						T_read_address <= segment_values[1];
+						segment <= 1;
 					end
 				end
 				PHI_CALC: begin
-					
+					// send the T_vals sequentially
+					// don't do any fancy stuff
+					if (segment < FORMANTS) begin
+						if (delay == 2'b00) begin
+							delay <= 2'b10;
+							phi_input_valid <= 1'b1;
+							T_read_address <= segment_values[segment+1];
+							segment <= segment + 1;
+						end else begin
+							delay <= delay - 1;
+							phi_input_valid <= 1'b0;
+						end
+					end else begin
+						state <= FINAL;
+					end
+				end
+				FINAL: begin
+					// multiply phi_output by 5000/pi
+					formant_valid <= 1'b1;
 				end
 			endcase
 		end
@@ -308,5 +316,19 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) formant(
 	assign F_write_address = current_i; // this is true!
 	assign B_write_address = current_i; // this is also true!
 
+	phi #(
+		.BIT_WIDTH(BIT_WIDTH),
+		.I(I),
+		.FORMANTS(FORMANTS),
+		.NU_VALUES(NU_VALUES)
+	)
+	phi_func (
+		.clk_in(clk_in),
+		.rst_in(rst_in),
+		.T_vals(T_output_data),
+		.input_valid(phi_input_valid),
+		.output(phi_output),
+		.output_valid(phi_output_valid)
+	);
 
 endmodule 
