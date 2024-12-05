@@ -139,13 +139,17 @@ always_ff @(posedge clk_in) begin
 end
 
 //now take square roots
-sqrt #(.BIT_WIDTH(BIT_WIDTH)) magnitude_sqrt
+/*sqrt #(.BIT_WIDTH(BIT_WIDTH)) magnitude_sqrt
 (
 	.clk_in(clk_in),
 	.valid_in(fft_output_valid_buffer),
 	.sqrt_in(fft_mag_squared),
 	.sqrt_out(wfft_result),
 	.valid_out(output_valid)
-);
+);*/
+
+//we apparently dont need shifts anymore.
+assign output_valid = fft_output_valid_buffer;
+assign wfft_result = fft_mag_squared<<4;
 
 endmodule
