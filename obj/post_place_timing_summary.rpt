@@ -1,0 +1,370 @@
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
+---------------------------------------------------------------------------------------------------------------------------------------------
+| Tool Version : Vivado v.2024.1 (lin64) Build 5076996 Wed May 22 18:36:09 MDT 2024
+| Date         : Tue Nov 26 14:46:08 2024
+| Host         : eecs-digital-10 running 64-bit Ubuntu 24.04.1 LTS
+| Command      : report_timing_summary -file obj/post_place_timing_summary.rpt
+| Design       : top_level
+| Device       : 7s50-csga324
+| Speed File   : -1  PRODUCTION 1.23 2018-06-13
+| Design State : Fully Placed
+---------------------------------------------------------------------------------------------------------------------------------------------
+
+Timing Summary Report
+
+------------------------------------------------------------------------------------------------
+| Timer Settings
+| --------------
+------------------------------------------------------------------------------------------------
+
+  Enable Multi Corner Analysis               :  Yes
+  Enable Pessimism Removal                   :  Yes
+  Pessimism Removal Resolution               :  Nearest Common Node
+  Enable Input Delay Default Clock           :  No
+  Enable Preset / Clear Arcs                 :  No
+  Disable Flight Delays                      :  No
+  Ignore I/O Paths                           :  No
+  Timing Early Launch at Borrowing Latches   :  No
+  Borrow Time for Max Delay Exceptions       :  Yes
+  Merge Timing Exceptions                    :  Yes
+  Inter-SLR Compensation                     :  Conservative
+
+  Corner  Analyze    Analyze    
+  Name    Max Paths  Min Paths  
+  ------  ---------  ---------  
+  Slow    Yes        Yes        
+  Fast    Yes        Yes        
+
+
+------------------------------------------------------------------------------------------------
+| Report Methodology
+| ------------------
+------------------------------------------------------------------------------------------------
+
+No report available as report_methodology has not been run prior. Run report_methodology on the current design for the summary of methodology violations.
+
+
+
+check_timing report
+
+Table of Contents
+-----------------
+1. checking no_clock (0)
+2. checking constant_clock (0)
+3. checking pulse_width_clock (0)
+4. checking unconstrained_internal_endpoints (0)
+5. checking no_input_delay (3)
+6. checking no_output_delay (4)
+7. checking multiple_clock (0)
+8. checking generated_clocks (0)
+9. checking loops (0)
+10. checking partial_input_delay (0)
+11. checking partial_output_delay (0)
+12. checking latch_loops (0)
+
+1. checking no_clock (0)
+------------------------
+ There are 0 register/latch pins with no clock.
+
+
+2. checking constant_clock (0)
+------------------------------
+ There are 0 register/latch pins with constant_clock.
+
+
+3. checking pulse_width_clock (0)
+---------------------------------
+ There are 0 register/latch pins which need pulse_width check
+
+
+4. checking unconstrained_internal_endpoints (0)
+------------------------------------------------
+ There are 0 pins that are not constrained for maximum delay.
+
+ There are 0 pins that are not constrained for maximum delay due to constant clock.
+
+
+5. checking no_input_delay (3)
+------------------------------
+ There are 3 input ports with no input delay specified. (HIGH)
+
+ There are 0 input ports with no input delay but user has a false path constraint.
+
+
+6. checking no_output_delay (4)
+-------------------------------
+ There are 4 ports with no output delay specified. (HIGH)
+
+ There are 0 ports with no output delay but user has a false path constraint
+
+ There are 0 ports with no output delay but with a timing clock defined on it or propagating through it
+
+
+7. checking multiple_clock (0)
+------------------------------
+ There are 0 register/latch pins with multiple clocks.
+
+
+8. checking generated_clocks (0)
+--------------------------------
+ There are 0 generated clocks that are not connected to a clock source.
+
+
+9. checking loops (0)
+---------------------
+ There are 0 combinational loops in the design.
+
+
+10. checking partial_input_delay (0)
+------------------------------------
+ There are 0 input ports with partial input delay specified.
+
+
+11. checking partial_output_delay (0)
+-------------------------------------
+ There are 0 ports with partial output delay specified.
+
+
+12. checking latch_loops (0)
+----------------------------
+ There are 0 combinational latch loops in the design through latch input
+
+
+
+------------------------------------------------------------------------------------------------
+| Design Timing Summary
+| ---------------------
+------------------------------------------------------------------------------------------------
+
+    WNS(ns)      TNS(ns)  TNS Failing Endpoints  TNS Total Endpoints      WHS(ns)      THS(ns)  THS Failing Endpoints  THS Total Endpoints     WPWS(ns)     TPWS(ns)  TPWS Failing Endpoints  TPWS Total Endpoints  
+    -------      -------  ---------------------  -------------------      -------      -------  ---------------------  -------------------     --------     --------  ----------------------  --------------------  
+      0.402        0.000                      0                23970       -0.094       -0.408                     10                23970        3.020        0.000                       0                 12527  
+
+
+Timing constraints are not met.
+
+
+------------------------------------------------------------------------------------------------
+| Clock Summary
+| -------------
+------------------------------------------------------------------------------------------------
+
+Clock  Waveform(ns)       Period(ns)      Frequency(MHz)
+-----  ------------       ----------      --------------
+gclk   {0.000 4.000}      10.000          100.000         
+
+
+------------------------------------------------------------------------------------------------
+| Intra Clock Table
+| -----------------
+------------------------------------------------------------------------------------------------
+
+Clock             WNS(ns)      TNS(ns)  TNS Failing Endpoints  TNS Total Endpoints      WHS(ns)      THS(ns)  THS Failing Endpoints  THS Total Endpoints     WPWS(ns)     TPWS(ns)  TPWS Failing Endpoints  TPWS Total Endpoints  
+-----             -------      -------  ---------------------  -------------------      -------      -------  ---------------------  -------------------     --------     --------  ----------------------  --------------------  
+gclk                0.402        0.000                      0                23970       -0.094       -0.408                     10                23970        3.020        0.000                       0                 12527  
+
+
+------------------------------------------------------------------------------------------------
+| Inter Clock Table
+| -----------------
+------------------------------------------------------------------------------------------------
+
+From Clock    To Clock          WNS(ns)      TNS(ns)  TNS Failing Endpoints  TNS Total Endpoints      WHS(ns)      THS(ns)  THS Failing Endpoints  THS Total Endpoints  
+----------    --------          -------      -------  ---------------------  -------------------      -------      -------  ---------------------  -------------------  
+
+
+------------------------------------------------------------------------------------------------
+| Other Path Groups Table
+| -----------------------
+------------------------------------------------------------------------------------------------
+
+Path Group    From Clock    To Clock          WNS(ns)      TNS(ns)  TNS Failing Endpoints  TNS Total Endpoints      WHS(ns)      THS(ns)  THS Failing Endpoints  THS Total Endpoints  
+----------    ----------    --------          -------      -------  ---------------------  -------------------      -------      -------  ---------------------  -------------------  
+
+
+------------------------------------------------------------------------------------------------
+| Timing Details
+| --------------
+------------------------------------------------------------------------------------------------
+
+
+---------------------------------------------------------------------------------------------------
+From Clock:  gclk
+  To Clock:  gclk
+
+Setup :            0  Failing Endpoints,  Worst Slack        0.402ns,  Total Violation        0.000ns
+Hold  :           10  Failing Endpoints,  Worst Slack       -0.094ns,  Total Violation       -0.408ns
+PW    :            0  Failing Endpoints,  Worst Slack        3.020ns,  Total Violation        0.000ns
+---------------------------------------------------------------------------------------------------
+
+
+Max Delay Paths
+--------------------------------------------------------------------------------------
+Slack (MET) :             0.402ns  (required time - arrival time)
+  Source:                 my_windowed_fft/window_multiply/arbr__1/CLK
+                            (rising edge-triggered cell DSP48E1 clocked by gclk  {rise@0.000ns fall@4.000ns period=10.000ns})
+  Destination:            my_windowed_fft/fft_input_window_reg[30]/D
+                            (rising edge-triggered cell FDRE clocked by gclk  {rise@0.000ns fall@4.000ns period=10.000ns})
+  Path Group:             gclk
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            10.000ns  (gclk rise@10.000ns - gclk rise@0.000ns)
+  Data Path Delay:        9.369ns  (logic 8.175ns (87.256%)  route 1.194ns (12.744%))
+  Logic Levels:           15  (CARRY4=12 DSP48E1=1 LUT2=1 LUT6=1)
+  Clock Path Skew:        -0.225ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    4.771ns = ( 14.771 - 10.000 ) 
+    Source Clock Delay      (SCD):    5.169ns
+    Clock Pessimism Removal (CPR):    0.174ns
+  Clock Uncertainty:      0.035ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock gclk rise edge)       0.000     0.000 r  
+    N15                                               0.000     0.000 r  clk_100mhz (IN)
+                         net (fo=0)                   0.000     0.000    clk_100mhz
+    N15                  IBUF (Prop_ibuf_I_O)         1.440     1.440 r  clk_100mhz_IBUF_inst/O
+                         net (fo=1, estimated)        1.972     3.412    clk_100mhz_IBUF
+    BUFGCTRL_X0Y0        BUFG (Prop_bufg_I_O)         0.096     3.508 r  clk_100mhz_IBUF_BUFG_inst/O
+                         net (fo=12566, estimated)    1.661     5.169    my_windowed_fft/window_multiply/clk_100mhz_IBUF_BUFG
+    DSP48_X0Y18          DSP48E1                                      r  my_windowed_fft/window_multiply/arbr__1/CLK
+  -------------------------------------------------------------------    -------------------
+    DSP48_X0Y18          DSP48E1 (Prop_dsp48e1_CLK_PCOUT[47])
+                                                      4.206     9.375 r  my_windowed_fft/window_multiply/arbr__1/PCOUT[47]
+                         net (fo=1, estimated)        0.000     9.375    my_windowed_fft/window_multiply/arbr__1_n_106
+    DSP48_X0Y19          DSP48E1 (Prop_dsp48e1_PCIN[47]_P[0])
+                                                      1.518    10.893 r  my_windowed_fft/window_multiply/arbr__2/P[0]
+                         net (fo=2, estimated)        0.892    11.785    my_windowed_fft/window_multiply/arbr__2_n_105
+    SLICE_X11Y43         LUT2 (Prop_lut2_I0_O)        0.124    11.909 r  my_windowed_fft/window_multiply/arbr_carry_i_3/O
+                         net (fo=1, routed)           0.000    11.909    my_windowed_fft/window_multiply/arbr_carry_i_3_n_0
+    SLICE_X11Y43         CARRY4 (Prop_carry4_S[1]_CO[3])
+                                                      0.550    12.459 r  my_windowed_fft/window_multiply/arbr_carry/CO[3]
+                         net (fo=1, estimated)        0.000    12.459    my_windowed_fft/window_multiply/arbr_carry_n_0
+    SLICE_X11Y44         CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.114    12.573 r  my_windowed_fft/window_multiply/arbr_carry__0/CO[3]
+                         net (fo=1, estimated)        0.000    12.573    my_windowed_fft/window_multiply/arbr_carry__0_n_0
+    SLICE_X11Y45         CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.114    12.687 r  my_windowed_fft/window_multiply/arbr_carry__1/CO[3]
+                         net (fo=1, estimated)        0.000    12.687    my_windowed_fft/window_multiply/arbr_carry__1_n_0
+    SLICE_X11Y46         CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.114    12.801 r  my_windowed_fft/window_multiply/arbr_carry__2/CO[3]
+                         net (fo=1, estimated)        0.000    12.801    my_windowed_fft/window_multiply/arbr_carry__2_n_0
+    SLICE_X11Y47         CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.114    12.915 r  my_windowed_fft/window_multiply/arbr_carry__3/CO[3]
+                         net (fo=1, estimated)        0.000    12.915    my_windowed_fft/window_multiply/arbr_carry__3_n_0
+    SLICE_X11Y48         CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.114    13.029 r  my_windowed_fft/window_multiply/arbr_carry__4/CO[3]
+                         net (fo=1, estimated)        0.000    13.029    my_windowed_fft/window_multiply/arbr_carry__4_n_0
+    SLICE_X11Y49         CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.114    13.143 r  my_windowed_fft/window_multiply/arbr_carry__5/CO[3]
+                         net (fo=1, estimated)        0.000    13.143    my_windowed_fft/window_multiply/arbr_carry__5_n_0
+    SLICE_X11Y50         CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.114    13.257 r  my_windowed_fft/window_multiply/arbr_carry__6/CO[3]
+                         net (fo=1, estimated)        0.000    13.257    my_windowed_fft/window_multiply/arbr_carry__6_n_0
+    SLICE_X11Y51         CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.114    13.371 r  my_windowed_fft/window_multiply/arbr_carry__7/CO[3]
+                         net (fo=1, estimated)        0.000    13.371    my_windowed_fft/window_multiply/arbr_carry__7_n_0
+    SLICE_X11Y52         CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.114    13.485 r  my_windowed_fft/window_multiply/arbr_carry__8/CO[3]
+                         net (fo=1, estimated)        0.000    13.485    my_windowed_fft/window_multiply/arbr_carry__8_n_0
+    SLICE_X11Y53         CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.114    13.599 r  my_windowed_fft/window_multiply/arbr_carry__9/CO[3]
+                         net (fo=1, estimated)        0.000    13.599    my_windowed_fft/window_multiply/arbr_carry__9_n_0
+    SLICE_X11Y54         CARRY4 (Prop_carry4_CI_O[1])
+                                                      0.334    13.933 r  my_windowed_fft/window_multiply/arbr_carry__10/O[1]
+                         net (fo=1, estimated)        0.302    14.235    my_windowed_fft/window_multiply/data1[30]
+    SLICE_X9Y54          LUT6 (Prop_lut6_I5_O)        0.303    14.538 r  my_windowed_fft/window_multiply/fft_input_window[30]_i_1/O
+                         net (fo=1, routed)           0.000    14.538    my_windowed_fft/window_multiply_n_3
+    SLICE_X9Y54          FDRE                                         r  my_windowed_fft/fft_input_window_reg[30]/D
+  -------------------------------------------------------------------    -------------------
+
+                         (clock gclk rise edge)      10.000    10.000 r  
+    N15                                               0.000    10.000 r  clk_100mhz (IN)
+                         net (fo=0)                   0.000    10.000    clk_100mhz
+    N15                  IBUF (Prop_ibuf_I_O)         1.370    11.370 r  clk_100mhz_IBUF_inst/O
+                         net (fo=1, estimated)        1.873    13.244    clk_100mhz_IBUF
+    BUFGCTRL_X0Y0        BUFG (Prop_bufg_I_O)         0.091    13.335 r  clk_100mhz_IBUF_BUFG_inst/O
+                         net (fo=12566, estimated)    1.436    14.771    my_windowed_fft/clk_100mhz_IBUF_BUFG
+    SLICE_X9Y54          FDRE                                         r  my_windowed_fft/fft_input_window_reg[30]/C
+                         clock pessimism              0.174    14.944    
+                         clock uncertainty           -0.035    14.909    
+    SLICE_X9Y54          FDRE (Setup_fdre_C_D)        0.031    14.940    my_windowed_fft/fft_input_window_reg[30]
+  -------------------------------------------------------------------
+                         required time                         14.940    
+                         arrival time                         -14.538    
+  -------------------------------------------------------------------
+                         slack                                  0.402    
+
+
+
+
+
+Min Delay Paths
+--------------------------------------------------------------------------------------
+Slack (VIOLATED) :        -0.094ns  (arrival time - required time)
+  Source:                 wfft_result_buffer_reg[186][2]/C
+                            (rising edge-triggered cell FDRE clocked by gclk  {rise@0.000ns fall@4.000ns period=10.000ns})
+  Destination:            wfft_result_buffer_reg[187][2]/D
+                            (rising edge-triggered cell FDRE clocked by gclk  {rise@0.000ns fall@4.000ns period=10.000ns})
+  Path Group:             gclk
+  Path Type:              Hold (Min at Fast Process Corner)
+  Requirement:            0.000ns  (gclk rise@0.000ns - gclk rise@0.000ns)
+  Data Path Delay:        0.303ns  (logic 0.164ns (54.107%)  route 0.139ns (45.893%))
+  Logic Levels:           0  
+  Clock Path Skew:        0.351ns (DCD - SCD - CPR)
+    Destination Clock Delay (DCD):    2.218ns
+    Source Clock Delay      (SCD):    1.628ns
+    Clock Pessimism Removal (CPR):    0.239ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock gclk rise edge)       0.000     0.000 r  
+    N15                                               0.000     0.000 r  clk_100mhz (IN)
+                         net (fo=0)                   0.000     0.000    clk_100mhz
+    N15                  IBUF (Prop_ibuf_I_O)         0.209     0.209 r  clk_100mhz_IBUF_inst/O
+                         net (fo=1, estimated)        0.831     1.040    clk_100mhz_IBUF
+    BUFGCTRL_X0Y0        BUFG (Prop_bufg_I_O)         0.026     1.066 r  clk_100mhz_IBUF_BUFG_inst/O
+                         net (fo=12566, estimated)    0.562     1.628    clk_100mhz_IBUF_BUFG
+    SLICE_X50Y99         FDRE                                         r  wfft_result_buffer_reg[186][2]/C
+  -------------------------------------------------------------------    -------------------
+    SLICE_X50Y99         FDRE (Prop_fdre_C_Q)         0.164     1.792 r  wfft_result_buffer_reg[186][2]/Q
+                         net (fo=2, estimated)        0.139     1.931    wfft_result_buffer_reg[186][2]
+    SLICE_X49Y100        FDRE                                         r  wfft_result_buffer_reg[187][2]/D
+  -------------------------------------------------------------------    -------------------
+
+                         (clock gclk rise edge)       0.000     0.000 r  
+    N15                                               0.000     0.000 r  clk_100mhz (IN)
+                         net (fo=0)                   0.000     0.000    clk_100mhz
+    N15                  IBUF (Prop_ibuf_I_O)         0.396     0.396 r  clk_100mhz_IBUF_inst/O
+                         net (fo=1, estimated)        0.875     1.271    clk_100mhz_IBUF
+    BUFGCTRL_X0Y0        BUFG (Prop_bufg_I_O)         0.029     1.300 r  clk_100mhz_IBUF_BUFG_inst/O
+                         net (fo=12566, estimated)    0.918     2.218    clk_100mhz_IBUF_BUFG
+    SLICE_X49Y100        FDRE                                         r  wfft_result_buffer_reg[187][2]/C
+                         clock pessimism             -0.239     1.979    
+    SLICE_X49Y100        FDRE (Hold_fdre_C_D)         0.046     2.025    wfft_result_buffer_reg[187][2]
+  -------------------------------------------------------------------
+                         required time                         -2.025    
+                         arrival time                           1.931    
+  -------------------------------------------------------------------
+                         slack                                 -0.094    
+
+
+
+
+
+Pulse Width Checks
+--------------------------------------------------------------------------------------
+Clock Name:         gclk
+Waveform(ns):       { 0.000 4.000 }
+Period(ns):         10.000
+Sources:            { clk_100mhz }
+
+Check Type        Corner  Lib Pin             Reference Pin  Required(ns)  Actual(ns)  Slack(ns)  Location      Pin
+Min Period        n/a     RAMB36E1/CLKARDCLK  n/a            2.576         10.000      7.424      RAMB36_X0Y4   my_windowed_fft/FFT_512/SU1/TW/ff_im_reg/CLKARDCLK
+Low Pulse Width   Slow    SRLC32E/CLK         n/a            0.980         6.000       5.020      SLICE_X12Y52  audio_pc_buffer_reg[128][0]_srl32/CLK
+High Pulse Width  Slow    SRLC32E/CLK         n/a            0.980         4.000       3.020      SLICE_X12Y52  audio_pc_buffer_reg[128][0]_srl32/CLK
+
+
+

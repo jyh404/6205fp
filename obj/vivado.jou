@@ -1,0 +1,24 @@
+#-----------------------------------------------------------
+# Vivado v2024.1 (64-bit)
+# SW Build 5076996 on Wed May 22 18:36:09 MDT 2024
+# IP Build 5075265 on Wed May 22 21:45:21 MDT 2024
+# SharedData Build 5076995 on Wed May 22 18:29:18 MDT 2024
+# Start of session at: Tue Nov 26 14:44:59 2024
+# Process ID: 2729
+# Current directory: /home/fpga/worker_place/temp/temp/344265b1393649d39703a2fec7da6c95
+# Command line: vivado -mode batch -source build.tcl
+# Log file: /home/fpga/worker_place/temp/temp/344265b1393649d39703a2fec7da6c95/vivado.log
+# Journal file: /home/fpga/worker_place/temp/temp/344265b1393649d39703a2fec7da6c95/vivado.jou
+# Running On        :eecs-digital-10
+# Platform          :Ubuntu
+# Operating System  :Ubuntu 24.04.1 LTS
+# Processor Detail  :13th Gen Intel(R) Core(TM) i7-13700
+# CPU Frequency     :799.801 MHz
+# CPU Physical cores:16
+# CPU Logical cores :24
+# Host memory       :33324 MB
+# Swap memory       :8589 MB
+# Total Virtual     :41914 MB
+# Available Virtual :40833 MB
+#-----------------------------------------------------------
+source build.tcl

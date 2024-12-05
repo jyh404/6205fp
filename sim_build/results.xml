@@ -1,0 +1,6 @@
+<testsuites name="results">
+  <testsuite name="all" package="all">
+    <property name="random_seed" value="1732218010" />
+    <testcase name="test_a" classname="test_fft" file="/mnt/c/Users/ivann/Desktop/Main/Work/2024/Fall 2024/6.2050/proj02-fft/sim/test_fft.py" lineno="18" time="0.909900426864624" sim_time_ns="10650.001" ratio_time="11704.578529211438" />
+  </testsuite>
+</testsuites>

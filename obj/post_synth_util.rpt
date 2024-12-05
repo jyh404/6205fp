@@ -1,0 +1,77 @@
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
+---------------------------------------------------------------------------------------------------------------------------------------------
+| Tool Version : Vivado v.2024.1 (lin64) Build 5076996 Wed May 22 18:36:09 MDT 2024
+| Date         : Tue Nov 26 14:45:49 2024
+| Host         : eecs-digital-10 running 64-bit Ubuntu 24.04.1 LTS
+| Command      : report_utilization -file obj/post_synth_util.rpt -hierarchical -hierarchical_depth 4
+| Design       : top_level
+| Device       : xc7s50csga324-1
+| Speed File   : -1
+| Design State : Synthesized
+---------------------------------------------------------------------------------------------------------------------------------------------
+
+Utilization Design Information
+
+Table of Contents
+-----------------
+1. Utilization by Hierarchy
+
+1. Utilization by Hierarchy
+---------------------------
+
++-------------------------+-------------------------------+------------+------------+---------+------+-------+--------+--------+------------+
+|         Instance        |             Module            | Total LUTs | Logic LUTs | LUTRAMs | SRLs |  FFs  | RAMB36 | RAMB18 | DSP Blocks |
++-------------------------+-------------------------------+------------+------------+---------+------+-------+--------+--------+------------+
+| top_level               |                         (top) |       7105 |       5560 |       0 | 1545 | 10974 |      4 |      0 |         40 |
+|   (top_level)           |                         (top) |       2162 |       1778 |       0 |  384 |  8917 |      0 |      0 |          0 |
+|   counter_16khz_trigger |                       counter |         22 |         22 |       0 |    0 |    32 |      0 |      0 |          0 |
+|   my_spi_con            |                       spi_con |         88 |         88 |       0 |    0 |    29 |      0 |      0 |          0 |
+|   my_uart_transmitter   |                 uart_transmit |         30 |         30 |       0 |    0 |    23 |      0 |      0 |          0 |
+|   my_windowed_fft       |                  windowed_fft |       4803 |       3642 |       0 | 1161 |  1973 |      4 |      0 |         40 |
+|     (my_windowed_fft)   |                  windowed_fft |        230 |        230 |       0 |    0 |   103 |      0 |      0 |          0 |
+|     FFT_512             |                           FFT |       4253 |       3101 |       0 | 1152 |  1606 |      4 |      0 |         32 |
+|       SU1               |                       SdfUnit |       1504 |        736 |       0 |  768 |   396 |      2 |      0 |          8 |
+|         (SU1)           |                       SdfUnit |        277 |        277 |       0 |    0 |   227 |      0 |      0 |          0 |
+|         BF1             |                  Butterfly_10 |         16 |         16 |       0 |    0 |     0 |      0 |      0 |          0 |
+|         BF2             |  Butterfly__parameterized0_11 |         88 |         88 |       0 |    0 |     0 |      0 |      0 |          0 |
+|         DB1             |                   DelayBuffer |        643 |        131 |       0 |  512 |    96 |      0 |      0 |          0 |
+|         DB2             |   DelayBuffer__parameterized0 |        256 |          0 |       0 |  256 |    64 |      0 |      0 |          0 |
+|         MU              |                   Multiply_12 |         47 |         47 |       0 |    0 |     0 |      0 |      0 |          8 |
+|         TC              |            TwiddleConvert8_13 |         98 |         98 |       0 |    0 |     9 |      0 |      0 |          0 |
+|         TW              |                    Twiddle_14 |         80 |         80 |       0 |    0 |     0 |      2 |      0 |          0 |
+|       SU2               |       SdfUnit__parameterized0 |       1044 |        852 |       0 |  192 |   362 |      2 |      0 |          8 |
+|         (SU2)           |       SdfUnit__parameterized0 |         29 |         29 |       0 |    0 |   227 |      0 |      0 |          0 |
+|         BF1             |                   Butterfly_6 |         27 |         27 |       0 |    0 |     0 |      0 |      0 |          0 |
+|         BF2             |   Butterfly__parameterized0_7 |         90 |         90 |       0 |    0 |     0 |      0 |      0 |          0 |
+|         DB1             |   DelayBuffer__parameterized1 |        357 |        229 |       0 |  128 |    64 |      0 |      0 |          0 |
+|         DB2             |   DelayBuffer__parameterized2 |        194 |        130 |       0 |   64 |    64 |      0 |      0 |          0 |
+|         MU              |                    Multiply_8 |         95 |         95 |       0 |    0 |     0 |      0 |      0 |          8 |
+|         TC              |             TwiddleConvert8_9 |        102 |        102 |       0 |    0 |     7 |      0 |      0 |          0 |
+|         TW              |                       Twiddle |        152 |        152 |       0 |    0 |     0 |      2 |      0 |          0 |
+|       SU3               |       SdfUnit__parameterized1 |        830 |        702 |       0 |  128 |   360 |      0 |      0 |          8 |
+|         (SU3)           |       SdfUnit__parameterized1 |         31 |         31 |       0 |    0 |   227 |      0 |      0 |          0 |
+|         BF1             |                   Butterfly_2 |         32 |         32 |       0 |    0 |     0 |      0 |      0 |          0 |
+|         BF2             |   Butterfly__parameterized0_3 |         90 |         90 |       0 |    0 |     0 |      0 |      0 |          0 |
+|         DB1             |   DelayBuffer__parameterized3 |        288 |        224 |       0 |   64 |    64 |      0 |      0 |          0 |
+|         DB2             |   DelayBuffer__parameterized4 |        194 |        130 |       0 |   64 |    64 |      0 |      0 |          0 |
+|         MU              |                    Multiply_4 |         95 |         95 |       0 |    0 |     0 |      0 |      0 |          8 |
+|         TC              |             TwiddleConvert8_5 |        102 |        102 |       0 |    0 |     5 |      0 |      0 |          0 |
+|       SU4               |       SdfUnit__parameterized2 |        673 |        609 |       0 |   64 |   421 |      0 |      0 |          8 |
+|         (SU4)           |       SdfUnit__parameterized2 |         29 |         29 |       0 |    0 |   227 |      0 |      0 |          0 |
+|         BF1             |                   Butterfly_1 |         27 |         27 |       0 |    0 |     0 |      0 |      0 |          0 |
+|         BF2             |     Butterfly__parameterized0 |         90 |         90 |       0 |    0 |     0 |      0 |      0 |          0 |
+|         DB1             |   DelayBuffer__parameterized5 |        293 |        229 |       0 |   64 |    64 |      0 |      0 |          0 |
+|         DB2             |   DelayBuffer__parameterized6 |        130 |        130 |       0 |    0 |   128 |      0 |      0 |          0 |
+|         MU              |                      Multiply |         95 |         95 |       0 |    0 |     0 |      0 |      0 |          8 |
+|         TC              |               TwiddleConvert8 |         11 |         11 |       0 |    0 |     2 |      0 |      0 |          0 |
+|       SU5               |                      SdfUnit2 |        202 |        202 |       0 |    0 |    67 |      0 |      0 |          0 |
+|         (SU5)           |                      SdfUnit2 |          0 |          0 |       0 |    0 |     3 |      0 |      0 |          0 |
+|         BF              |                     Butterfly |         80 |         80 |       0 |    0 |     0 |      0 |      0 |          0 |
+|         DB              |   DelayBuffer__parameterized7 |        122 |        122 |       0 |    0 |    64 |      0 |      0 |          0 |
+|     im_square           |   Multiply_re__parameterized0 |          0 |          0 |       0 |    0 |     0 |      0 |      0 |          2 |
+|     magnitude_sqrt      |                          sqrt |        152 |        143 |       0 |    9 |   264 |      0 |      0 |          0 |
+|     re_square           | Multiply_re__parameterized0_0 |         24 |         24 |       0 |    0 |     0 |      0 |      0 |          2 |
+|     window_multiply     |                   Multiply_re |        144 |        144 |       0 |    0 |     0 |      0 |      0 |          4 |
++-------------------------+-------------------------------+------------+------------+---------+------+-------+--------+--------+------------+
+
+
