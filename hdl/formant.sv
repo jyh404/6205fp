@@ -73,7 +73,7 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) formant(
 				.RAM_DEPTH(I),
 				.RAM_PERFORMANCE("HIGH_PERFORMANCE")
 			) 
-			Emin
+			Emin_bram
 			(
 				.clka(clk_in),     // Clock
 				//writing port:
@@ -100,7 +100,7 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) formant(
 				.RAM_DEPTH(I),
 				.RAM_PERFORMANCE("HIGH_PERFORMANCE")
 			) 
-			F
+			F_bram
 			(
 				.clka(clk_in),     // Clock
 				//writing port:
@@ -126,7 +126,7 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) formant(
 				.RAM_DEPTH(I),
 				.RAM_PERFORMANCE("HIGH_PERFORMANCE")
 			) 
-			B
+			B_bram
 			(
 				.clka(clk_in),     // Clock
 				//writing port:
@@ -149,7 +149,7 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) formant(
 		end
   	endgenerate
 
-	typedef enum {START, T_CALC, F_CALC, SEGMENT_CALC, PHI_CALC, FINAL} state;
+	typedef enum {START, T_CALC, EMIN_CALC, F_CALC, SEGMENT_CALC, PHI_CALC, FINAL} state;
 
 	logic [I_WIDTH-1:0] current_i;
 	logic [I_WIDTH-1:0] segment_values [0:FORMANTS];
@@ -174,15 +174,21 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) formant(
 				end
 				T_CALC: begin
 					if (T_write_address == I - 1) begin
-						state <= F_CALC;
+						state <= EMIN_CALC;
 						current_i <= 0;
-						f_iter_begin <= 1'b1;
+					end
+				end
+				EMIN_CALC: begin
+					if (E_write_address == I - 1) begin
+						state <= F_CALC;
+						f_begin_iter <= 1'b1;
 					end
 				end
 				F_CALC: begin
+					f_begin_iter <= 1'b0;
 					if (f_iter_done) begin
 						if (current_i < I - 1) begin
-							f_iter_begin <= 1'b1;
+							state <= EMIN_CALC;
 							current_i <= current_i + 1;
 						end else begin
 							state <= SEGMENT_CALC;
@@ -210,11 +216,13 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) formant(
 						delay <= 2'b10;
 						T_read_address <= segment_values[1];
 						segment <= 1;
+						phi_input_start <= 1'b1;
 					end
 				end
 				PHI_CALC: begin
 					// send the T_vals sequentially
 					// don't do any fancy stuff
+					phi_input_start <= 1'b0;
 					if (segment < FORMANTS) begin
 						if (delay == 2'b00) begin
 							delay <= 2'b10;
@@ -225,7 +233,7 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) formant(
 							delay <= delay - 1;
 							phi_input_valid <= 1'b0;
 						end
-					end else begin
+					end else if (phi_output_valid)
 						state <= FINAL;
 					end
 				end
@@ -240,6 +248,7 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) formant(
 	t #(
 		.BIT_WIDTH(BIT_WIDTH),
 		.I(I),
+		.NU_VALUES(NU_VALUES)
 	) 
 	t_func (
 		.clk_in(clk_in),
@@ -252,7 +261,7 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) formant(
 	);
 
 	logic emin_input_valid;
-	logic emin_write_buffer;
+	logic emin_write_buffer = current_i[0]; // buffer depends on i
 	logic emin_output_valid;
 
 	emin #(
@@ -263,20 +272,21 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) formant(
 		.clk_in(clk_in),
 		.rst_in(rst_in),
 		.i(current_i),
-		.T_resp(T_output_data),
 		.input_valid(emin_input_valid),
+		.T_resp(T_output_data),
 		.T_req(T_read_address),
-		.buffer(emin_write_buffer),
 		.j(E_write_address),
 		.data(E_input_data),
 		.output_valid(emin_output_valid)
 	);
 
 	// direct which buffer we are writing to
-	E_input_data_valid[emin_write_buffer] = 1'b1 & emin_output_valid;
-	E_input_data_valid[!emin_write_buffer] = 1'b0 & emin_output_valid;
+	E_input_data_valid[emin_write_buffer] = emin_output_valid;
+	E_input_data_valid[!emin_write_buffer] = 1'b0;
 
-	logic [I_WIDTH-1:0] k_req;
+	// need to pipeline k_req to make sure we pass the correct
+	// F(k-1,j) and F(k,i) that was requested two cycles ago
+	logic [I_WIDTH-1:0] k_req [0:2];
 	logic [I_WIDTH-1:0] j_req;
 	logic [$clog(FORMANTS)-1:0] k_write;
 	logic f_output_valid;
@@ -294,10 +304,9 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) formant(
 		.begin_iter(f_begin_iter),
 		.i(current_i),
 		.e_prev(E_output_data[!emin_write_buffer]),
-		.f_prev(F_output_data[current_k-1]),
-		.f_old(F_output_data[current_k]),
-		.k_prev(current_k),
-		.k_req(k_req),
+		.f_prev(F_output_data[k_req[2]-1]),
+		.f_old(F_output_data[k_req[2]]),
+		.k_req(k_req[0]),
 		.j_req(j_req),
 		.k_write(k_write),
 		.f_data(F_input_data),
@@ -306,8 +315,13 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) formant(
 		.iter_done(f_iter_done)
 	);
 
-	assign F_read_address[k_req-1] = j_req;
-	assign F_read_address[k_req] = current_i;
+	always_comb @(posedge clk_in) begin
+		k_req[1] <= k_req[0];
+		k_req[2] <= k_req[1];
+	end
+
+	assign F_read_address[k_req[0]-1] = j_req;
+	assign F_read_address[k_req[0]] = current_i;
 	integer k;
 	for (k = 0; k < FORMANTS; ++k) begin
 		assign F_input_valid[k] = (k == k_write) & f_output_valid;
@@ -326,6 +340,7 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) formant(
 		.clk_in(clk_in),
 		.rst_in(rst_in),
 		.T_vals(T_output_data),
+		.input_start(phi_input_start),
 		.input_valid(phi_input_valid),
 		.output(phi_output),
 		.output_valid(phi_output_valid)

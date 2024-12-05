@@ -14,6 +14,16 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) f(
     output wire output_valid,
 	output wire iter_done, // pulse when iteration for i is done
 );
+	// assumes E_min(j+1,i) has finished calculating
+	// when begin_iter is pulsed:
+	//	read in i
+	// 	loop on k in 1 ... FORMANTS:
+	//   loop on j in k-2 ... i-1:
+	//    request k_req = k, j_req = j
+	//	  two cycles later receive back E(j+1,i), F(k-1,j), F(k,i)
+	//	  compute new value of F(k,i) and B(k,i)
+	//	  send k_write = k, f_data = F(k,i), b_data = B(k,i) with output_valid
+	//	when finished, output iter_done
 	// don't forget delay on e_prev, f_prev, f_old is 2 cycles after k_req,
 
 
