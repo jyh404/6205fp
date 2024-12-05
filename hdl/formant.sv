@@ -233,7 +233,7 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) formant(
 							delay <= delay - 1;
 							phi_input_valid <= 1'b0;
 						end
-					end else if (phi_output_valid)
+					end else if (phi_output_valid) begin
 						state <= FINAL;
 					end
 				end

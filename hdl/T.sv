@@ -10,5 +10,18 @@ module #(BIT_WIDTH = 32, I = 160, NU_VALUES = 3) t(
 	// receives fft data sequentially (I = 160 samples)
 	// computes T(0, i) and outputs them sequentially to be stored in BRAM
 
-
+	generate
+		genvar i;
+		for (i = 0; i < NU_VALUES; ++i) begin
+			Multiply_re #(
+				.WIDTH = BIT_WIDTH
+			)
+			multiplier
+			(
+				.a_re(),
+				.b_re(),
+				.m_re()
+			);
+		end
+	endgenerate
 endmodule 
