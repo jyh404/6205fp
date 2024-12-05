@@ -11,7 +11,8 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) f(
 	output wire [$clog2(FORMANTS)-1:0] k_write,
 	output wire [BIT_WIDTH-1:0] f_data,
 	output wire [BIT_WIDTH-1:0] b_data,
-    output wire output_valid
+    output wire output_valid,
+	output wire iter_done, // pulse when iteration for i is done
 );
 	// don't forget delay on e_prev, f_prev, f_old is 2 cycles after k_req,
 

@@ -38,6 +38,11 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) formant(
 	logic [I_WIDTH-1:0] B_read_address [0:FORMANTS-1];
 	logic [BIT_WIDTH-1:0] B_output_data [0:FORMANTS-1];
 
+	// phi functions
+	logic [BIT_WIDTH-1:0] t_left [0:2][0:FORMANTS-1];
+	logic [BIT_WIDTH-1:0] t_right [0:2][0:FORMANTS-1];
+	logic [BIT_WIDTH-1:0] phi_output [0:FORMANTS-1];
+	logic phi_output_valid;
 
 	generate
 		genvar i;
@@ -147,12 +152,27 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) formant(
 				.regcea(1'b1), // Port A output register enable
 				.regceb(1'b1) // Port B output register enable
 			);
+
+			phi #(
+				.BIT_WIDTH(BIT_WIDTH),
+				.I(I),
+				.FORMANTS(FORMANTS)
+			)
+			phi_func
+			(
+				.clk_in(clk_in),
+				.rst_in(rst_in),
+				.left()
+			)
 		end
   	endgenerate
 
-	typedef enum {START, T_CALC, F_CALC, PHI_CALC} state;
+	typedef enum {START, T_CALC, F_CALC, SEGMENT_CALC, PHI_CALC} state;
 
 	logic [I_WIDTH-1:0] current_i;
+	logic [I_WIDTH-1:0] segment_values [0:FORMANTS];
+	logic [$clog2(FORMANTS)-1:0] segment;
+	logic [1:0] delay;
 
 	always_ff @(posedge clk_in) begin
 		if (rst_in) begin
@@ -169,13 +189,41 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) formant(
 					if (T_write_address == I - 1) begin
 						state <= F_CALC;
 						current_i <= 0;
+						f_iter_begin <= 1'b1;
 					end
 				end
 				F_CALC: begin
-
+					if (f_iter_done) begin
+						if (current_i < I - 1) begin
+							f_iter_begin <= 1'b1;
+							current_i <= current_i + 1;
+						end else begin
+							state <= SEGMENT_CALC;
+							segment <= FORMANTS;
+							segment_values[FORMANTS] <= I-1;
+							delay <= 2'b10;
+							B_read_address[FORMANTS-1] <= segment_values[FORMANTS];
+						end
+					end
+				end
+				SEGMENT_CALC: begin
+					if (segment > 0) begin
+						if (delay == 2'b00) begin
+							delay <= 2'b10;
+							segment_values[segment-1] <= B_output_data[segment-1];
+							if (segment > 1) begin
+								B_read_address[segment-2] <= B_output_data[segment-1];
+							end
+							segment <= segment - 1;
+						end else begin
+							delay <= delay - 1;
+						end
+					end else begin
+						state <= PHI_CALC;
+					end
 				end
 				PHI_CALC: begin
-
+					
 				end
 			endcase
 		end
@@ -224,6 +272,8 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) formant(
 	logic [I_WIDTH-1:0] j_req;
 	logic [$clog(FORMANTS)-1:0] k_write;
 	logic f_output_valid;
+	logic f_begin_iter;
+	logic f_iter_done;
 
 	f #(
 		.BIT_WIDTH(BIT_WIDTH),
@@ -233,7 +283,7 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) formant(
 	f_func (
 		.clk_in(clk_in),
 		.rst_in(rst_in),
-		.begin_iter(),
+		.begin_iter(f_begin_iter),
 		.i(current_i),
 		.e_prev(E_output_data[!emin_write_buffer]),
 		.f_prev(F_output_data[current_k-1]),
@@ -244,7 +294,8 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) formant(
 		.k_write(k_write),
 		.f_data(F_input_data),
 		.b_data(B_input_data),
-		.output_valid(f_output_valid)
+		.output_valid(f_output_valid),
+		.iter_done(f_iter_done)
 	);
 
 	assign F_read_address[k_req-1] = j_req;
@@ -252,8 +303,10 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) formant(
 	integer k;
 	for (k = 0; k < FORMANTS; ++k) begin
 		assign F_input_valid[k] = (k == k_write) & f_output_valid;
+		assign B_input_valid[k] = F_input_valid[k];
 	end
 	assign F_write_address = current_i; // this is true!
-	
+	assign B_write_address = current_i; // this is also true!
+
 
 endmodule 
