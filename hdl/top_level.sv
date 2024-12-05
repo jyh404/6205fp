@@ -184,6 +184,32 @@ module top_level
 	.wfft_result(wfft_result)
 	);
 	
+	// Rearrangement into 0-159 to get the order of frequencies we want
+	logic [SAMPLE_BITS-1:0] reordered_coeff [0:160];
+	logic [8:0] counter_coeff;
+	logic [8:0] reversed_counter_coeff;
+	assign reversed_counter_coeff = 
+		{counter_coeff[0],counter_coeff[1],counter_coeff[2],
+		counter_coeff[3],counter_coeff[4],counter_coeff[5],
+		counter_coeff[6],counter_coeff[7],counter_coeff[8]};
+	logic all_coeff_ordered = 0;
+	
+	always_ff @(posedge clk_100mhz) begin
+		if (wfft_valid) begin
+			counter_coeff <= 1;
+			reordered_coeff[0] <= wfft_result;
+		end else if (counter_coeff != 0) begin
+			counter_coeff <= counter_coeff + 1;
+			if (reversed_counter_coeff < 160) begin
+				reordered_coeff[reversed_counter_coeff] <= wfft_result;
+			end
+			if (counter_coeff == 9'h1ff) begin
+				all_coeff_ordered <= 1;
+			end
+		end else
+			all_coeff_ordered <= 0;
+	end
+	
 	// Formant analysis using wfft_result and wfft_valid
 	// Note that these are still fairly sus... reversed_bit or what
 	// but it's time for another file!
@@ -192,28 +218,30 @@ module top_level
 	logic formant_valid;
 	logic [SAMPLE_BITS-1:0] freq_buffer [0:FORMANTS];
 	
-	formant #(.FORMANTS(FORMANTS)) my_dp_formant
+	/*formant #(.FORMANTS(FORMANTS)) my_dp_formant
 	(.clk_in(clk_100mhz),
 	.rst_in(sys_rst),
 	.fft_valid(wfft_valid),
 	.fft_data(wfft_result),
 	.formant_valid(),
 	.formant_freq(freq_buffer)
-	); //Probably fine to just send all frequencies to module...
+	); //Probably fine to just send all frequencies to module...*/
 	
 	//Outputing to check
 	//This is failing and I'm kinda ambivalent to that...
+	/* Currently only taking 160 fourier coeffients and ordered above.
 	logic [7:0] wfft_data;
 	logic [7:0] wfft_result_buffer [0:512]; //this stores the fourier coeffs
 	logic [9:0] wfft_data_counter;
 	always_ff @(posedge clk_100mhz) begin
 		if (wfft_valid) begin
-			wfft_result_buffer[0] <= wfft_result[SAMPLE_BITS-17:SAMPLE_BITS-24];
+			//changing which bits of the fourier coeff we extract...
+			wfft_result_buffer[0] <= wfft_result[SAMPLE_BITS-1:SAMPLE_BITS-8];
 			for (int i=1; i<512; i=i+1) begin
 				wfft_result_buffer[i] <= wfft_result_buffer[i-1];
 			end
 		end
-	end 
+	end */
 	
 	parameter UART_SAMPLES = 420;
 	parameter CYCLES_PER_SAMPLE = 2200;
@@ -250,8 +278,11 @@ module top_level
 				uart_420_packets[i] <= 
 					8'h80 ^ audio_pc_buffer[i + WINDOW_SIZE - WINDOW_OVERLAP][SAMPLE_BITS-1 : SAMPLE_BITS-8];
 			end
-			for (int i=0; i<256; i=i+1) begin
-				uart_420_packets[i+160] <= wfft_result_buffer[i<<1];
+			for (int i=0; i<160; i=i+1) begin //Now loading the 
+				uart_420_packets[i+160] <= reordered_coeff[i];
+			end
+			for (int i=320; i<416; i=i+1) begin
+				uart_420_packets[i] <= 8'h00;
 			end
 			uart_420_packets[416] <= 8'hff;
 			uart_420_packets[417] <= 8'hff;
