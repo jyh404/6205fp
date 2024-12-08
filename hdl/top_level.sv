@@ -251,20 +251,29 @@ module top_level
 		end
 	end
 	
+	logic [7:0] f_output_data_log;
+	
+	log2bad my_bad_log2 (
+		.clk_in(clk_100mhz),
+		.log_in(f_output_data),
+		.log_out(f_output_data_log)
+	);
+	
 	//logic reordering_valid_buffer [0:1];
-	logic [7:0] reordering_counter_buffer [0:1];
+	logic [7:0] reordering_counter_buffer [0:2]; //2 for BRAM, 1 for log2bad
 	logic [7:0] reordered_counter;
 	logic [7:0] reordered_flipflops [0:256];
 	always_ff @(posedge clk_100mhz) begin
 		//reordering_valid_buffer[1] <= fft_bram_all_ready[0];
 		//reordering_valid_buffer[0] <= reordering_valid_buffer[1];
-		reordering_counter_buffer[1] <= reordering_counter;
+		reordering_counter_buffer[2] <= reordering_counter;
+		reordering_counter_buffer[1] <= reordering_counter_buffer[2];
 		reordering_counter_buffer[0] <= reordering_counter_buffer[1];
-		reordered_flipflops[reordering_counter_buffer[0]] <= 
-			f_output_data[SAMPLE_BITS-5 : SAMPLE_BITS-12];
+		reordered_flipflops[reordering_counter_buffer[0]] <= f_output_data_log;
 		// i am sneaking the uart packet here... oops
 	end
 	
+
 	
 	// Rearrangement into 0-159 to get the order of frequencies we want\
 	// Rearrangement is failing, I am also testing the ip setup
