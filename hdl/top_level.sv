@@ -184,8 +184,91 @@ module top_level
 	.wfft_result(wfft_result)
 	);
 	
-	// Rearrangement into 0-159 to get the order of frequencies we want
-	logic [SAMPLE_BITS-1:0] reordered_coeff [0:160];
+	logic [7:0] f_write_address; 
+	logic [SAMPLE_BITS-1:0] f_input_data;
+	logic f_input_data_valid;
+	logic [7:0] f_read_address;
+	logic [SAMPLE_BITS-1:0] f_output_data;
+	
+	xilinx_true_dual_port_read_first_1_clock_ram #(
+		.RAM_WIDTH(SAMPLE_BITS),
+		.RAM_DEPTH(256),
+		.RAM_PERFORMANCE("HIGH_PERFORMANCE")
+	) 
+	fft_bram
+	(
+		.clka(clk_100mhz),     // Clock
+		//writing port:
+		.addra(f_write_address),   // Port A address bus,
+		.dina(f_input_data),     // Port A RAM input data
+		.wea(f_input_data_valid),       // Port A write enable
+		//reading port:
+		.addrb(f_read_address),   // Port B address bus,
+		.doutb(f_output_data),    // Port B RAM output data,
+		.douta(),   // Port A RAM output data, width determined from RAM_WIDTH
+		.dinb(16'b0),     // Port B RAM input data, width determined from RAM_WIDTH
+		.web(1'b0),       // Port B write enable
+		.ena(1'b1),       // Port A RAM Enable
+		.enb(1'b1),       // Port B RAM Enable,
+		.rsta(1'b0),     // Port A output reset
+		.rstb(1'b0),     // Port B output reset
+		.regcea(1'b1), // Port A output register enable
+		.regceb(1'b1) // Port B output register enable
+	);
+	
+	logic wfft_valid_prev;
+	logic [8:0] wfft_counter;
+	logic fft_bram_all_ready [0:2]; //Only read when this flares.
+	always_ff @(posedge clk_100mhz) begin
+		wfft_valid_prev <= wfft_valid;
+		if (wfft_valid && !wfft_valid_prev) begin
+			wfft_counter <= 1;
+		end else if (wfft_counter != 0) begin
+			wfft_counter <= wfft_counter + 1;
+		end
+		fft_bram_all_ready[2] <= (!wfft_valid && wfft_valid_prev);
+		fft_bram_all_ready[1] <= fft_bram_all_ready[2];
+		fft_bram_all_ready[0] <= fft_bram_all_ready[1];
+	end
+	
+	//writing module
+	always_ff @(posedge clk_100mhz) begin
+		f_input_data_valid <= (wfft_valid && wfft_counter[0] == 1'b0);
+		f_input_data <= wfft_result;
+		f_write_address <= {wfft_counter[1],wfft_counter[2],wfft_counter[3],
+							wfft_counter[4],wfft_counter[5],wfft_counter[6],
+							wfft_counter[7],wfft_counter[8]}; //ideally this is reversed later
+	end
+	
+	//reading module, testing here.
+	logic [7:0] reordering_counter;
+	assign f_read_address = reordering_counter;
+	always_ff @(posedge clk_100mhz) begin
+		if (fft_bram_all_ready[0] == 1'b1) begin //this is a flare signal
+			reordering_counter <= 8'h01;
+		end else if (reordering_counter != 8'h00) begin
+			reordering_counter <= reordering_counter + 1;
+		end
+	end
+	
+	//logic reordering_valid_buffer [0:1];
+	logic [7:0] reordering_counter_buffer [0:1];
+	logic [7:0] reordered_counter;
+	logic [7:0] reordered_flipflops [0:256];
+	always_ff @(posedge clk_100mhz) begin
+		//reordering_valid_buffer[1] <= fft_bram_all_ready[0];
+		//reordering_valid_buffer[0] <= reordering_valid_buffer[1];
+		reordering_counter_buffer[1] <= reordering_counter;
+		reordering_counter_buffer[0] <= reordering_counter_buffer[1];
+		reordered_flipflops[reordering_counter_buffer[0]] <= 
+			f_output_data[SAMPLE_BITS-5 : SAMPLE_BITS-12];
+		// i am sneaking the uart packet here... oops
+	end
+	
+	
+	// Rearrangement into 0-159 to get the order of frequencies we want\
+	// Rearrangement is failing, I am also testing the ip setup
+	/*logic [SAMPLE_BITS-1:0] reordered_coeff [0:160];
 	logic [8:0] counter_coeff;
 	logic [8:0] reversed_counter_coeff;
 	assign reversed_counter_coeff = 
@@ -195,7 +278,7 @@ module top_level
 	logic all_coeff_ordered = 0;
 	
 	always_ff @(posedge clk_100mhz) begin
-		if (wfft_valid) begin
+		if (wfft_valid) begin //I skill issued here, seek to fix this if i revert.
 			counter_coeff <= 1;
 			reordered_coeff[0] <= wfft_result;
 		end else if (counter_coeff != 0) begin
@@ -208,7 +291,9 @@ module top_level
 			end
 		end else
 			all_coeff_ordered <= 0;
-	end
+	end*/
+	
+	
 	
 	// Formant analysis using wfft_result and wfft_valid
 	// Note that these are still fairly sus... reversed_bit or what
@@ -279,7 +364,7 @@ module top_level
 					8'h80 ^ audio_pc_buffer[i + WINDOW_SIZE - WINDOW_OVERLAP][SAMPLE_BITS-1 : SAMPLE_BITS-8];
 			end
 			for (int i=0; i<160; i=i+1) begin //Now loading the 
-				uart_420_packets[i+160] <= reordered_coeff[i];
+				uart_420_packets[i+160] <= reordered_flipflops[i];
 			end
 			for (int i=320; i<416; i=i+1) begin
 				uart_420_packets[i] <= 8'h00;
