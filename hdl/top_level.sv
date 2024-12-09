@@ -251,28 +251,29 @@ module top_level
 		end
 	end
 	
-	logic [7:0] f_output_data_log;
+
 	
+	//This is used to output things in the log 'cause thats fun and all
+	logic [7:0] f_output_data_log;
 	log2bad my_bad_log2 (
 		.clk_in(clk_100mhz),
 		.log_in(f_output_data>>6), //experimentally, the smallest is 64.
 		.log_out(f_output_data_log)
 	);
 	
-	//logic reordering_valid_buffer [0:1];
+	logic reordering_valid_buffer [0:1];
 	logic [7:0] reordering_counter_buffer [0:2]; //2 for BRAM, 1 for log2bad
 	logic [7:0] reordered_counter;
 	logic [7:0] reordered_flipflops [0:256];
 	always_ff @(posedge clk_100mhz) begin
-		//reordering_valid_buffer[1] <= fft_bram_all_ready[0];
-		//reordering_valid_buffer[0] <= reordering_valid_buffer[1];
+		reordering_valid_buffer[1] <= fft_bram_all_ready[0];
+		reordering_valid_buffer[0] <= reordering_valid_buffer[1];
 		reordering_counter_buffer[2] <= reordering_counter;
 		reordering_counter_buffer[1] <= reordering_counter_buffer[2];
 		reordering_counter_buffer[0] <= reordering_counter_buffer[1];
 		reordered_flipflops[reordering_counter_buffer[0]] <= f_output_data_log;
 		// i am sneaking the uart packet here... oops
 	end
-	
 
 	
 	// Rearrangement into 0-159 to get the order of frequencies we want\
@@ -308,18 +309,38 @@ module top_level
 	// Note that these are still fairly sus... reversed_bit or what
 	// but it's time for another file!
 	parameter FORMANTS = 1;
+	parameter FREQ_INPUTS = 160;
 	
-	logic formant_valid;
+	logic formant_in_valid; //Keeps on for 160 cycles hopefully
+	logic [7:0] formant_valid_counter;
+	logic [31:0] formant_in_data;
 	logic [SAMPLE_BITS-1:0] freq_buffer [0:FORMANTS];
 	
-	/*formant #(.FORMANTS(FORMANTS)) my_dp_formant
+	//INPUTS TO FORMANTS
+	//assign formant_in_data = f_output_data;
+	always_ff @(posedge clk_100mhz) begin
+		formant_in_data <= f_output_data;
+		if (reordering_valid_buffer[0]) begin //2 cycle delay given here
+			formant_valid_counter <= 1;
+			formant_in_valid <= 1;
+		end else if (formant_valid_counter == FREQ_INPUTS-1) begin
+			formant_valid_counter <= 0;
+		end else if (formant_valid_counter != 0) begin
+			formant_valid_counter <= formant_valid_counter + 1;
+		end else begin
+			formant_in_valid <= 0;
+		end
+	end
+	
+	
+	formant #(.FORMANTS(FORMANTS)) my_dp_formant
 	(.clk_in(clk_100mhz),
 	.rst_in(sys_rst),
-	.fft_valid(wfft_valid),
-	.fft_data(wfft_result),
+	.fft_valid(formant_in_valid),
+	.fft_data(formant_in_data),
 	.formant_valid(),
 	.formant_freq(freq_buffer)
-	); //Probably fine to just send all frequencies to module...*/
+	); //Probably fine to just send all frequencies to module...
 	
 	//Outputing to check
 	//This is failing and I'm kinda ambivalent to that...

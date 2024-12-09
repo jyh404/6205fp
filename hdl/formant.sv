@@ -5,11 +5,11 @@ module formant #(
 ) (
 	input wire clk_in,
 	input wire rst_in,
-	input wire fft_valid,
-	input wire [BIT_WIDTH-1:0] fft_data,
+	input wire fft_valid, //valid for the 160 valid data
+	input wire [BIT_WIDTH-1:0] fft_data, //is in for 160 cycles
 	output logic formant_valid,
 	output logic [BIT_WIDTH-1:0] formant_freq [0:FORMANTS]
-);
+); //this has 1million cycles to finish, sure hope it does.
 	localparam I_WIDTH = $clog2(I);
 
 	// T BRAM Used for computation of Emin
@@ -177,6 +177,7 @@ module formant #(
 
 	// phi functions
 	logic phi_input_valid;
+	logic phi_input_start;
 	logic [BIT_WIDTH-1:0] phi_output [0:FORMANTS-1];
 	logic phi_output_valid;
 
@@ -342,13 +343,18 @@ module formant #(
 		k_req[2] <= k_req[1];
 	end
 
-	assign F_read_address[k_req[0]-1] = j_req;
-	assign F_read_address[k_req[0]] = current_i;
+	//assign F_read_address[k_req[0]-1] = j_req;
+	//assign F_read_address[k_req[0]] = current_i;
+	//See below for restatement
 	
-	genvar k;
-	for (k = 0; k < FORMANTS; ++k) begin
-		assign F_input_valid[k] = (k == k_write) & f_output_valid;
-		assign B_input_valid[k] = F_input_valid[k];
+	always_comb begin 
+		for (integer x = 0; x < FORMANTS; ++x) begin
+			F_read_address[x] = (x == k_req[0]) ? (current_i) : 
+				((x == k_req[0]-1) ? j_req : 0);
+			
+			F_input_data_valid[x] = (x == k_write) & f_output_valid;
+			B_input_data_valid[x] = F_input_data_valid[x];
+		end
 	end
 	
 	assign F_write_address = current_i; // this is true!
