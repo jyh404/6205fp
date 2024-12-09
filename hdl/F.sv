@@ -1,18 +1,21 @@
-module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) f(
-	input wire clk_in,
+module f #(
+	parameter BIT_WIDTH = 32, 
+	parameter I = 160, 
+	parameter FORMANTS = 5
+)(	input wire clk_in,
 	input wire rst_in,
 	input wire begin_iter,
 	input wire [$clog2(I)-1:0] i, // decide when to begin processing i, needs Emin to finish
 	input wire [BIT_WIDTH-1:0] e_prev, // E(j+1,i)
 	input wire [BIT_WIDTH-1:0] f_prev, // F(k-1,j)
 	input wire [BIT_WIDTH-1:0] f_old, // old F(k,i)
-	output wire [$clog2(FORMANTS)-1:0] k_req,
-	output wire [$clog2(I)-1:0] j_req,
-	output wire [$clog2(FORMANTS)-1:0] k_write,
-	output wire [BIT_WIDTH-1:0] f_data,
-	output wire [BIT_WIDTH-1:0] b_data,
-    output wire output_valid,
-	output wire iter_done, // pulse when iteration for i is done
+	output logic [$clog2(FORMANTS)-1:0] k_req,
+	output logic [$clog2(I)-1:0] j_req,
+	output logic [$clog2(FORMANTS)-1:0] k_write,
+	output logic [BIT_WIDTH-1:0] f_data,
+	output logic [BIT_WIDTH-1:0] b_data,
+    output logic output_valid,
+	output logic iter_done // pulse when iteration for i is done
 );
 	// assumes E_min(j+1,i) has finished calculating
 	// when begin_iter is pulsed:
@@ -26,5 +29,12 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) f(
 	//	when finished, output iter_done
 	// don't forget delay on e_prev, f_prev, f_old is 2 cycles after k_req,
 
-
+	assign k_req = 0;
+	assign j_req = 0;
+	assign k_write = 0;
+	assign f_data = 0;
+	assign b_data = 0;
+	assign output_valid = 0;
+	assign iter_done = 0;
+	
 endmodule 

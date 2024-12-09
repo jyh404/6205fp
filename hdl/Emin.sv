@@ -1,5 +1,8 @@
-module #(BIT_WIDTH = 32, I = 160, NU_VALUES = 3) emin(
-	input wire clk_in,
+module emin #(
+	parameter BIT_WIDTH = 32, 
+	parameter I = 160, 
+	parameter NU_VALUES = 3) 
+(	input wire clk_in,
 	input wire rst_in,
 	input wire [$clog2(I)-1:0] i,
 	input wire input_valid,
@@ -20,4 +23,7 @@ module #(BIT_WIDTH = 32, I = 160, NU_VALUES = 3) emin(
 	// PIPELINE ABOVE SOMEHOW
 	// don't forget delay on T_resp is 2 cycles w.r.t. T_req
 
+	// We need values of T(nu, i)
+	
+	
 endmodule 
