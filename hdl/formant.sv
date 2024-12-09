@@ -1,14 +1,20 @@
-module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) formant(
+module formant #(
+	parameter BIT_WIDTH = 32, 
+	parameter I = 160, 
+	parameter FORMANTS = 4
+) (
 	input wire clk_in,
 	input wire rst_in,
 	input wire fft_valid,
 	input wire [BIT_WIDTH-1:0] fft_data,
-	output wire formant_valid,
-	output wire [BIT_WIDTH-1:0] formant_freq [0:FORMANTS]
+	output logic formant_valid,
+	output logic [BIT_WIDTH-1:0] formant_freq [0:FORMANTS]
 );
 	localparam I_WIDTH = $clog2(I);
 
-	// T BRAM
+	// T BRAM Used for computation of Emin
+	// read_address is compiled as we only ever take all 3 values at once.
+	// Helps to spread out wires to split up the storage... maybe?
 	localparam NU_VALUES = 3;
 	logic [I_WIDTH-1:0] T_write_address;
 	logic [BIT_WIDTH-1:0] T_input_data [0:NU_VALUES-1];
@@ -16,7 +22,9 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) formant(
 	logic [I_WIDTH-1:0] T_read_address;
 	logic [BIT_WIDTH-1:0] T_output_data [0:NU_VALUES-1];
 
-	// Emin BRAM
+	// Emin BRAM Is the loss of having a segment (addr,f) for each f
+	// We are doing a rolling buffer for this.
+	// When one set of (addr,f) is being used, (addr, f+1) is being calculated.
 	localparam E_BUFFERS = 2;
 	logic [I_WIDTH-1:0] E_write_address;
 	logic [BIT_WIDTH-1:0] E_input_data;
@@ -24,14 +32,16 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) formant(
 	logic [I_WIDTH-1:0] E_read [0:E_BUFFERS-1];
 	logic [BIT_WIDTH-1:0] E_output_data [0:E_BUFFERS-1];
 
-	// F BRAM
+	// F BRAM Is the loss of having k segments up to addr
+	// There is one BRAM for each possible number of formants.
 	logic [I_WIDTH-1:0] F_write_address;
 	logic [BIT_WIDTH-1:0] F_input_data;
 	logic F_input_data_valid [0:FORMANTS-1];
 	logic [I_WIDTH-1:0] F_read_address [0:FORMANTS-1];
 	logic [BIT_WIDTH-1:0] F_output_data [0:FORMANTS-1];
 
-	// B BRAM
+	// B BRAM Used the store the optimal place for the next segment boundary.
+	// Traceback to get the optimal segment placement.
 	logic [I_WIDTH-1:0] B_write_address;
 	logic [BIT_WIDTH-1:0] B_input_data;
 	logic B_input_data_valid [0:FORMANTS-1];
@@ -40,6 +50,8 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) formant(
 
 	generate
 		genvar i;
+		
+		//T[nu] is the sum multiplied some cosine weightage.
 		for (i = 0; i < NU_VALUES; ++i) begin
 			xilinx_true_dual_port_read_first_1_clock_ram #(
 				.RAM_WIDTH(BIT_WIDTH),
@@ -67,6 +79,8 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) formant(
 				.regceb(1'b1) // Port B output register enable
 			);
 		end
+		
+		//E[0,1] is a rolling buffer for the calculation of the next frequency sample.
 		for (i = 0; i < E_BUFFERS; ++i) begin
 			xilinx_true_dual_port_read_first_1_clock_ram #(
 				.RAM_WIDTH(BIT_WIDTH),
@@ -94,7 +108,9 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) formant(
 				.regceb(1'b1) // Port B output register enable
 			);
 		end
-		for (i = 0; i < FORMANT; ++i) begin
+		
+		//F[p] is the loss of (0,addr) if p formants were used.
+		for (i = 0; i < FORMANTS; ++i) begin
 			xilinx_true_dual_port_read_first_1_clock_ram #(
 				.RAM_WIDTH(BIT_WIDTH),
 				.RAM_DEPTH(I),
@@ -126,6 +142,8 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) formant(
 				.RAM_DEPTH(I),
 				.RAM_PERFORMANCE("HIGH_PERFORMANCE")
 			) 
+			
+			//B[p] is the location of the next segment boundary if p segments are used.
 			B_bram
 			(
 				.clka(clk_in),     // Clock
@@ -149,7 +167,8 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) formant(
 		end
   	endgenerate
 
-	typedef enum {START, T_CALC, EMIN_CALC, F_CALC, SEGMENT_CALC, PHI_CALC, FINAL} state;
+	typedef enum {START, T_CALC, EMIN_CALC, F_CALC, SEGMENT_CALC, PHI_CALC, FINAL} poss_state;
+	poss_state state;
 
 	logic [I_WIDTH-1:0] current_i;
 	logic [I_WIDTH-1:0] segment_values [0:FORMANTS];
@@ -166,7 +185,7 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) formant(
 			state <= START;
 			current_i <= 0;
 		end else begin
-			case (state):
+			case (state)
 				START: begin
 					if (fft_valid) begin
 						state <= T_CALC;
@@ -266,7 +285,7 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) formant(
 
 	emin #(
 		.BIT_WIDTH(BIT_WIDTH),
-		.I(I),
+		.I(I)
 	) 
 	emin_func (
 		.clk_in(clk_in),
@@ -281,14 +300,17 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) formant(
 	);
 
 	// direct which buffer we are writing to
-	E_input_data_valid[emin_write_buffer] = emin_output_valid;
-	E_input_data_valid[!emin_write_buffer] = 1'b0;
+	//assign E_input_data_valid[emin_write_buffer] = emin_output_valid;
+	//assign E_input_data_valid[!emin_write_buffer] = 1'b0;
+	assign E_input_data_valid[0] = (emin_write_buffer == 1'b1) ? 1'b0 : emin_output_valid;
+	assign E_input_data_valid[1] = (emin_write_buffer == 1'b1) ? emin_output_valid : 1'b0;
+	
 
 	// need to pipeline k_req to make sure we pass the correct
 	// F(k-1,j) and F(k,i) that was requested two cycles ago
 	logic [I_WIDTH-1:0] k_req [0:2];
 	logic [I_WIDTH-1:0] j_req;
-	logic [$clog(FORMANTS)-1:0] k_write;
+	logic [$clog2(FORMANTS)-1:0] k_write;
 	logic f_output_valid;
 	logic f_begin_iter;
 	logic f_iter_done;
@@ -315,18 +337,20 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) formant(
 		.iter_done(f_iter_done)
 	);
 
-	always_comb @(posedge clk_in) begin
+	always_ff @(posedge clk_in) begin
 		k_req[1] <= k_req[0];
 		k_req[2] <= k_req[1];
 	end
 
 	assign F_read_address[k_req[0]-1] = j_req;
 	assign F_read_address[k_req[0]] = current_i;
-	integer k;
+	
+	genvar k;
 	for (k = 0; k < FORMANTS; ++k) begin
 		assign F_input_valid[k] = (k == k_write) & f_output_valid;
 		assign B_input_valid[k] = F_input_valid[k];
 	end
+	
 	assign F_write_address = current_i; // this is true!
 	assign B_write_address = current_i; // this is also true!
 
@@ -342,7 +366,7 @@ module #(BIT_WIDTH = 32, I = 160, FORMANTS = 5) formant(
 		.T_vals(T_output_data),
 		.input_start(phi_input_start),
 		.input_valid(phi_input_valid),
-		.output(phi_output),
+		.output_data(phi_output),
 		.output_valid(phi_output_valid)
 	);
 

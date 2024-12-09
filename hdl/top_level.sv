@@ -255,7 +255,7 @@ module top_level
 	
 	log2bad my_bad_log2 (
 		.clk_in(clk_100mhz),
-		.log_in(f_output_data),
+		.log_in(f_output_data>>6), //experimentally, the smallest is 64.
 		.log_out(f_output_data_log)
 	);
 	
