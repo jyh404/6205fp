@@ -1,14 +1,14 @@
 // Provides Cosine Lookup for I = 160
 
 module CosineLookup (
-	input clock,
-	input [7:0] addr1,
-	input [7:0] addr2,
-	output [31:0] res1,
-	output [31:0] res2
+	input wire clock,
+	input wire [8:0] addr1,
+	input wire [8:0] addr2,
+	output logic [31:0] res1,
+	output logic [31:0] res2
 );
 
-wire [31:0] lookup [0:160];
+wire [31:0] lookup [0:319];
 
 //does this work because of some packed/unpacked shenanigans??
 always @(posedge clock) begin
