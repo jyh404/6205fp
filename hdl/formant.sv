@@ -265,7 +265,7 @@ module formant #(
 		end
 	end
 
-	t #(
+	T #(
 		.BIT_WIDTH(BIT_WIDTH),
 		.I(I),
 		.NU_VALUES(NU_VALUES)
