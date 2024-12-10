@@ -206,7 +206,7 @@ module top_level
 		.addrb(f_read_address),   // Port B address bus,
 		.doutb(f_output_data),    // Port B RAM output data,
 		.douta(),   // Port A RAM output data, width determined from RAM_WIDTH
-		.dinb(16'b0),     // Port B RAM input data, width determined from RAM_WIDTH
+		.dinb(32'b0),     // Port B RAM input data, width determined from RAM_WIDTH
 		.web(1'b0),       // Port B write enable
 		.ena(1'b1),       // Port A RAM Enable
 		.enb(1'b1),       // Port B RAM Enable,
