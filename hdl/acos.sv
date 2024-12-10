@@ -1,6 +1,7 @@
 // Directly find the gap that's closest
 // Then interpolate between the 2
 // Answer is scaled to 5000 automatically
+// Also this guy is pipelined.
 
 // START: DUMB COMMENTS
 // A binary search algo for arccos
@@ -14,17 +15,16 @@
 module acos (
 	input wire clk_in,
 	input wire [31:0] acos_in,
-	input wire valid_in,
-	output logic [31:0] acos_out
+	output logic [23:0] acos_out
 );
 
-logic [31:0] acos_vals [0:256]; //initialized below
+logic [23:0] lookup [0:256]; //initialized below
 
 //find the bounds of acos(in)
 logic [23:0] acos_min, acos_max;
 always_ff @(posedge clk_in) begin
-	acos_min <= acos_vals[acos_in[31:24]];
-	acos_max <= acos_vals[acos_in[31:24]+1];
+	acos_min <= lookup[{~acos_in[31],acos_in[30:24]}];
+	acos_max <= lookup[{~acos_in[31],acos_in[30:24]}+1];
 end
 
 //linear interpolate a better value for acos
@@ -34,16 +34,30 @@ end
 logic [23:0] min_scale;
 logic [23:0] max_scale;
 
-assign min_scale = ~acos_in[23:0];
-assign max_scale = acos_in[23:0];
+assign min_scale = {1'b0,~acos_in[23:1]};
+assign max_scale = {1'b0,acos_in[23:1]};
+
+logic [23:0] min_prod;
+logic [23:0] max_prod;
 
 Multiply_re #(
 	.WIDTH(24)
 ) mult_min (
-	.a_re(),
-	.b_re(),
-	.m_re()
+	.a_re(acos_min),
+	.b_re(min_scale),
+	.m_re(min_prod)
 );
+Multiply_re #(
+	.WIDTH(24)
+) mult_max (
+	.a_re(acos_max),
+	.b_re(max_scale),
+	.m_re(max_prod)
+);
+
+always_ff @(posedge clk_in) begin
+	acos_out <= min_prod + max_prod;
+end
 
 assign lookup[0] = 24'h138800; // -128 5000.0
 assign lookup[1] = 24'h12c0ed; // -127 4800.926572307113

@@ -1,3 +1,6 @@
+// max 700 cycles
+// flares once on output_valid
+
 module phi #(
     parameter BIT_WIDTH = 32, 
     parameter I = 160, 
@@ -56,7 +59,7 @@ module phi #(
 	// this is to be space efficient.
 	// because it is a small time constant.
 	
-	parameter CYCLES_PER_PHI = 100;
+	parameter CYCLES_PER_PHI = 60;
 	logic [$clog2(CYCLES_PER_PHI)-1:0] cycle_count = 0;
 	logic [$clog2(FORMANTS+1)-1:0] formant_index = 0;
 	
@@ -159,23 +162,23 @@ module phi #(
 				b_in <= r[0];
 			end
 			7: begin
-				m00  <= m_out;
+				m00  <= $signed(m_out);
 				a_in <= r[1];
 				b_in <= r[1];
 			end
 			8: begin
-				m11  <= m_out;
+				m11  <= $signed(m_out);
 				a_in <= r[0];
 				b_in <= r[1];
 			end
 			9: begin
 				abdenom <= $signed(m00)-$signed(m11);
-				m01  <= m_out;
+				m01  <= $signed(m_out);
 				a_in <= r[1];
 				b_in <= r[2];
 			end
 			10: begin
-				m12  <= m_out;
+				m12  <= $signed(m_out);
 				a_in <= r[0];
 				b_in <= r[2];
 			end
@@ -188,16 +191,16 @@ module phi #(
 				oneminusb <= $signed(m00) - $signed(m02);
 			end
 			13: begin
-				a_in <= anum;
-				b_in <= oneminusb;
+				a_in <= $signed(anum);
+				b_in <= $signed(oneminusb);
 			end
 			14: begin
-				a_in <= (bnum <<< 2);
-				b_in <= abdenom;
-				full_num <= m_out; //the worry is accuracy is... doomed...
+				a_in <= $signed(bnum);
+				b_in <= $signed(abdenom);
+				full_num <= $signed(m_out >>> 2); //the worry is accuracy is... doomed...
 			end
 			15: begin
-				full_denom <= m_out; //same here.
+				full_denom <= $signed(m_out); //same here.
 			end
 			
 			//Multiply here again.
@@ -242,10 +245,11 @@ module phi #(
 	always_ff @(posedge clk_in) begin
 		case(cycle_count)
 			16: begin
-				division_sign <= div_num[BIT_WIDTH-1];
+				division_sign <= full_num[2*BIT_WIDTH-1] ^ full_denom[2*BIT_WIDTH-1];
 				div_data_valid <= 1;
-				div_denom <= full_denom; //guaranteed positive.
-				div_num <= (div_num[BIT_WIDTH-1]) ? 
+				div_denom <= (full_denom[BIT_WIDTH-1]) ? 
+					$signed((-full_denom)) : $signed(full_denom); //not guaranteed positive.
+				div_num <= (full_num[BIT_WIDTH-1]) ? 
 					$signed((-full_num) << BIT_WIDTH) : $signed(full_num << BIT_WIDTH); //not guaranteed positive.
 			end
 			17: begin
@@ -262,7 +266,7 @@ module phi #(
 	//
 	
 	logic signed [BIT_WIDTH-1:0] to_acos;
-	logic acos_data_valid;
+	logic [23:0] acos_data;
 	
 	//might be done by bimary search
 	//256 values
@@ -271,20 +275,26 @@ module phi #(
 	acos_calc(
 		.clk_in(clk_in),
 		.acos_in(to_acos),
-		.acos_in_valid(acos_data_valid),
 		.acos_out(acos_data)
 	);
 	
 	always_ff @(posedge clk_in) begin
-		case
+		case(cycle_count)
 			50: begin
-				to_acos <= $signed({quotient[BIT_WIDTH:1]});
+				to_acos <= (division_sign == 1'b1) ? 
+					-$signed({1'b0,quotient[BIT_WIDTH-1:1]}) : 
+					{1'b0,quotient[BIT_WIDTH-1:1]};
 				//this takes the sign (if it exceeds one whatever is good)
 				//and 31 MSB of the output.
-				acos_data_valid <= 1'b1;
 			end
-			51: begin
-				acos_data_valid <= 1'b0;
+			53: begin
+				output_data[formant_index-1] <= acos_data;
+			end
+			54: begin
+				output_valid <= (formant_index == FORMANTS) ? 1 : 0;
+			end
+			55: begin
+				output_valid <= 0;
 			end
 		endcase
 	/*
