@@ -8,7 +8,7 @@ module formant #(
 	input wire fft_valid, //valid for the 160 valid data
 	input wire [BIT_WIDTH-1:0] fft_data, //is in for 160 cycles
 	output logic formant_valid,
-	output logic [BIT_WIDTH-1:0] formant_freq [0:FORMANTS]
+	output logic [BIT_WIDTH-1:0] formant_freq [0:FORMANTS-1]
 ); //this has 1million cycles to finish, sure hope it does.
 	localparam I_WIDTH = $clog2(I);
 
@@ -257,12 +257,10 @@ module formant #(
 							segment <= segment + 1;
 						end
 					end else if (phi_output_valid) begin
-						state <= FINAL;
+						state <= START;
+						formant_valid <= 1'b1;
+						formant_freq <= phi_output;
 					end
-				end
-				FINAL: begin
-					// phi_output already multiplied by 5000/pi
-					formant_valid <= 1'b1;
 				end
 			endcase
 		end
