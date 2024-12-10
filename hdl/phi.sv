@@ -265,6 +265,8 @@ module phi #(
 	logic acos_data_valid;
 	
 	//might be done by bimary search
+	//256 values
+	//followed by linear interpolation (done by binary search)
 	acos#(.BIT_WIDTH(BITWIDTH))
 	acos_calc(
 		.clk_in(clk_in),
