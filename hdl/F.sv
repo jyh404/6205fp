@@ -33,7 +33,7 @@ module f #(
 	poss_state state;
 
 	logic [$clog2(I)-1:0] i_reg;
-	logic [BIT_WIDTH-1:0] cur_f;
+	logic signed [BIT_WIDTH-1:0] cur_f;
 
 	parameter NUM_STAGES = 4;
 	logic signed [$clog2(I):0] j_pipeline [0:NUM_STAGES-1];
@@ -66,14 +66,15 @@ module f #(
 					end
 				end
 				REQ_F: begin
-					// we don't actually request F(k,i)
-					// but we should still pause to separate CALC and F step
-					cur_f <= 32'hFFFFFFFF; // infinity
+					// we don't actually request F(k,i); note k_req just stores current k
+					// but easier to pause and separate CALC and F step
+					cur_f <= 32'h7FFFFFFF; // largest positive signed
 					state <= CALC;
 					j_pipeline[0] <= k_req - 2;
 					k_pipeline[0] <= k_req;
 					valid_pipeline[0] <= 1'b1;
 					output_valid <= 1'b0;
+					f_data <= 0;
 					b_data <= 0;
 				end
 				CALC: begin
@@ -96,8 +97,9 @@ module f #(
 								b_data <= j_pipeline[2];
 							end
 							// if k_pipeline[2] == 1 otherwise, then F(k-1,j) = infinity
-							// so no updates should occur
-						end else if (k_pipeline[2] > 1 && j_pipeline[2] >= -1 && e_prev + f_prev < cur_f) begin
+							// if j_pipeline[2] == -1 otherwise, then F(k-1,j) = infinity as well
+							// so no updates should occur for both cases
+						end else if (k_pipeline[2] > 1 && j_pipeline[2] > -1 && e_prev + f_prev < cur_f) begin
 							cur_f <= e_prev + f_prev;
 							b_data <= j_pipeline[2];
 						end

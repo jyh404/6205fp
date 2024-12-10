@@ -193,14 +193,14 @@ module formant #(
 					end
 				end
 				T_CALC: begin
-					if (T_write_address == I) begin
+					if (T_write_address == I - 1) begin
 						// we have written the last T value
 						state <= EMIN_CALC;
 					end
 				end
 				EMIN_CALC: begin
 					emin_input_valid <= 1'b0;
-					if (E_write_address == I) begin
+					if (E_write_address == I - 1) begin
 						// we have written the last Emin value
 						state <= F_CALC;
 						f_begin_iter <= 1'b1;
@@ -209,14 +209,14 @@ module formant #(
 				F_CALC: begin
 					f_begin_iter <= 1'b0;
 					if (f_iter_done) begin
-						if (current_i < I) begin
+						if (current_i < I - 1) begin
 							state <= EMIN_CALC;
 							current_i <= current_i + 1;
 							emin_input_valid <= 1'b1;
 						end else begin
 							state <= SEGMENT_CALC;
 							segment <= FORMANTS;
-							segment_values[FORMANTS] <= I;
+							segment_values[FORMANTS] <= I - 1;
 							delay <= 1'b1;
 							B_read_address <= segment_values[FORMANTS];
 						end
@@ -300,10 +300,9 @@ module formant #(
 		.data(E_input_data),
 		.output_valid(E_input_data_valid)
 	);
-	
 
 	// need to pipeline k_req to make sure we pass the correct
-	// F(k-1,j) and F(k,i) that was requested two cycles ago
+	// F(k-1,j) that was requested two cycles ago
 	logic [I_WIDTH-1:0] k_req [0:2];
 	logic [I_WIDTH-1:0] j_req;
 	logic [$clog2(FORMANTS)-1:0] k_write;
@@ -321,7 +320,7 @@ module formant #(
 		.rst_in(rst_in),
 		.begin_iter(f_begin_iter),
 		.i(current_i),
-		.e_prev(E_output_data[!emin_write_buffer]),
+		.e_prev(E_output_data),
 		.f_prev(F_output_data[k_req[2]-1]),
 		.k_req(k_req[0]),
 		.j_req(j_req),
