@@ -26,7 +26,7 @@ module emin #(
 	typedef enum {START, REQ_I, CALC} poss_state;
 	poss_state state;
 	
-	signed logic [BIT_WIDTH-1:0] T_i [0:NU_VALUES-1];
+	logic signed [BIT_WIDTH-1:0] T_i [0:NU_VALUES-1];
 	logic [$clog(I)-1:0] i_reg;
 	logic [$clog(I)-1:0] j_reg;
 	logic [1:0] delay;
@@ -67,22 +67,22 @@ module emin #(
 	);
 
 	parameter NUM_MULTS = 9;
-	signed logic [BIT_WIDTH-1:0] a_factor [0:NUM_MULTS-1];
-	signed logic [BIT_WIDTH-1:0] b_factor [0:NUM_MULTS-1];
-	signed logic [BIT_WIDTH-1:0] mult_res [0:NUM_MULTS-1];
+	logic signed [BIT_WIDTH-1:0] a_factor [0:NUM_MULTS-1];
+	logic signed [BIT_WIDTH-1:0] b_factor [0:NUM_MULTS-1];
+	logic signed [BIT_WIDTH-1:0] mult_res [0:NUM_MULTS-1];
 	generate
 		// we need seven multipliers for our pipeline
-		genvar i;
-		for (i = 0; i < NUM_MULTS; ++i) {
+		genvar f;
+		for (f = 0; f < NUM_MULTS; ++f) begin
 			Multiply_re #(
 				.WIDTH(BIT_WIDTH)
 			)
 			multiplier (
-				.a_re(a_factor[i]),
-				.b_re(b_factor[i]),
-				.m_re(mult_res[i])
+				.a_re(a_factor[f]),
+				.b_re(b_factor[f]),
+				.m_re(mult_res[f])
 			);
-		}
+		end
 	endgenerate
 
 	// now assign our multipliers
@@ -115,11 +115,11 @@ module emin #(
 	assign b_factor[7] = signed_quotient;
 	assign b_factor[8] = signed_quotient;
 
-	signed logic [BITWIDTH-1:0] alpha_k_num;
-	signed logic [BITWIDTH-1:0] beta_k_num;
-	signed logic [BITWIDTH-1:0] denom;
-	signed logic [BITWIDTH-1:0] abs_denom;
-	signed logic [BITWIDTH-1:0] signed_quotient;
+	logic signed [BITWIDTH-1:0] alpha_k_num;
+	logic signed [BITWIDTH-1:0] beta_k_num;
+	logic signed [BITWIDTH-1:0] denom;
+	logic signed [BITWIDTH-1:0] abs_denom;
+	logic signed [BITWIDTH-1:0] signed_quotient;
 
 	assign alpha_k_num = $signed(mult_res[0]) - $signed(mult_res[1]);
 	assign beta_k_num = $signed(mult_res[4]) - $signed(mult_res[3]);
@@ -154,7 +154,7 @@ module emin #(
 			output_valid <= 1'b0;
 		end else begin
 			case (state)
-				START begin:
+				START: begin
 					output_valid <= 1'b0;
 					if (input_valid) begin
 						i_reg <= i;
@@ -163,7 +163,7 @@ module emin #(
 						delay <= 2'b10;
 					end
 				end
-				REQ_I begin:
+				REQ_I: begin
 					if (delay > 0) begin
 						delay <= delay - 1;
 					end else begin
@@ -173,7 +173,7 @@ module emin #(
 						state <= CALC;
 					end
 				end
-				CALC begin:
+				CALC: begin
 					if (j_reg <= i) begin
 						// send in a request
 						T_req <= j_reg - 1; 
