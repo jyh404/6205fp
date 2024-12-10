@@ -8,7 +8,6 @@ module f #(
 	input wire [$clog2(I)-1:0] i, // decide when to begin processing i, needs Emin to finish
 	input wire [BIT_WIDTH-1:0] e_prev, // E(j+1,i)
 	input wire [BIT_WIDTH-1:0] f_prev, // F(k-1,j)
-	input wire [BIT_WIDTH-1:0] f_old, // old F(k,i)
 	output logic [$clog2(FORMANTS)-1:0] k_req,
 	output logic [$clog2(I)-1:0] j_req,
 	output logic [$clog2(FORMANTS)-1:0] k_write,
@@ -27,15 +26,14 @@ module f #(
 	//	  compute new value of F(k,i) and B(k,i)
 	//	  send k_write = k, f_data = F(k,i), b_data = B(k,i) with output_valid
 	//	when finished, output iter_done
-	// don't forget delay on e_prev, f_prev, f_old is 2 cycles after k_req
+	// don't forget delay on e_prev, f_prev is 2 cycles after k_req
 	// somehow PIPELINE
 	
 	typedef enum {START, REQ_F, CALC} poss_state;
 	poss_state state;
 
 	logic [$clog2(I)-1:0] i_reg;
-	logic [BIT_WIDTH-1:0] old_f;
-	logic [1:0] delay;
+	logic [BIT_WIDTH-1:0] cur_f;
 
 	parameter NUM_STAGES = 4;
 	logic signed [$clog2(I):0] j_pipeline [0:NUM_STAGES-1];
@@ -60,24 +58,23 @@ module f #(
 			case (state)
 				START: begin
 					output_valid <= 1'b0;
+					iter_done <= 1'b0;
 					if (begin_iter) begin
 						i_reg <= i;
 						state <= REQ_F;
 						k_req <= 1;
-						delay <= 2'b10;
 					end
 				end
 				REQ_F: begin
-					if (delay) begin
-						delay <= delay - 1;
-					end else begin
-						old_f <= f_old;
-						state <= CALC;
-						j_pipeline[0] <= k_req - 2;
-						k_pipeline[0] <= k_req;
-						valid_pipeline[0] <= 1'b1;
-						b_data <= 0;
-					end
+					// we don't actually request F(k,i)
+					// but we should still pause to separate CALC and F step
+					cur_f <= 32'hFFFFFFFF; // infinity
+					state <= CALC;
+					j_pipeline[0] <= k_req - 2;
+					k_pipeline[0] <= k_req;
+					valid_pipeline[0] <= 1'b1;
+					output_valid <= 1'b0;
+					b_data <= 0;
 				end
 				CALC: begin
 					if (j_pipeline[0] == i-1) begin
@@ -94,25 +91,27 @@ module f #(
 					if (valid_pipeline[2]) begin
 						if (j_pipeline[2] == -1 && k_pipeline[2] == 1) begin
 							// case of F(0, -1)
-							if (e_prev < old_f) begin
-								old_f <= e_prev;
+							if (e_prev < cur_f) begin
+								cur_f <= e_prev;
 								b_data <= j_pipeline[2];
 							end
-						end else if (k_pipeline[2] > 1 && e_prev + f_prev < old_f) begin
-							old_f <= e_prev + f_prev;
+							// if k_pipeline[2] == 1 otherwise, then F(k-1,j) = infinity
+							// so no updates should occur
+						end else if (k_pipeline[2] > 1 && j_pipeline[2] >= -1 && e_prev + f_prev < cur_f) begin
+							cur_f <= e_prev + f_prev;
 							b_data <= j_pipeline[2];
 						end
 					end
 					if (j_pipeline[3] == i-1 && valid_pipeline[3]) begin
 						// reached the end
 						k_write <= k_req;
-						f_data <= old_f;
+						f_data <= cur_f;
 						output_valid <= 1'b1;
 						if (k_req == i+1 || k_req == FORMANTS) begin
+							iter_done <= 1'b1;
 							state <= START;
 						end else begin
 							k_req <= k_req + 1;
-							delay <= 2'b10;
 							state <= REQ_F;
 						end
 					end else begin

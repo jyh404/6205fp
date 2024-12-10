@@ -29,7 +29,7 @@ module emin #(
 	logic signed [BIT_WIDTH-1:0] T_i [0:NU_VALUES-1];
 	logic [$clog2(I)-1:0] i_reg;
 	logic [$clog2(I)-1:0] j_reg;
-	logic [1:0] delay;
+	logic delay;
 
 	parameter NUM_STAGES = 20;
 	logic [BIT_WIDTH-1:0] pipeline [0:NUM_STAGES-1][0:5];
@@ -140,7 +140,6 @@ module emin #(
 	assign flipped_quotient = ~quotient[30:0] + 1; // need to split into two steps bc cocotb
 	assign signed_quotient = (sign_pipeline[18]) ? $signed({1'b1, flipped_quotient}) : $signed({1'b0, quotient[30:0]});
 
-
 	always_ff @(posedge clk_in) begin
 		if (rst_in) begin
 			integer b;
@@ -160,7 +159,7 @@ module emin #(
 						i_reg <= i;
 						T_req <= i;
 						state <= REQ_I;
-						delay <= 2'b10;
+						delay <= 1'b1; // delay = 1 means 2 cycles later
 					end
 				end
 				REQ_I: begin

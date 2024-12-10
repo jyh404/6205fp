@@ -29,7 +29,7 @@ module formant #(
 	logic [I_WIDTH-1:0] E_write_address;
 	logic [BIT_WIDTH-1:0] E_input_data;
 	logic E_input_data_valid [0:E_BUFFERS-1];
-	logic [I_WIDTH-1:0] E_read [0:E_BUFFERS-1];
+	logic [I_WIDTH-1:0] E_read_address;
 	logic [BIT_WIDTH-1:0] E_output_data [0:E_BUFFERS-1];
 
 	// F BRAM Is the loss of having k segments up to addr
@@ -37,7 +37,7 @@ module formant #(
 	logic [I_WIDTH-1:0] F_write_address;
 	logic [BIT_WIDTH-1:0] F_input_data;
 	logic F_input_data_valid [0:FORMANTS-1];
-	logic [I_WIDTH-1:0] F_read_address [0:FORMANTS-1];
+	logic [I_WIDTH-1:0] F_read_address;
 	logic [BIT_WIDTH-1:0] F_output_data [0:FORMANTS-1];
 
 	// B BRAM Used the store the optimal place for the next segment boundary.
@@ -124,7 +124,7 @@ module formant #(
 				.dina(F_input_data),     // Port A RAM input data
 				.wea(F_input_data_valid[i]),       // Port A write enable
 				//reading port:
-				.addrb(F_read_address[i]),   // Port B address bus,
+				.addrb(F_read_address),   // Port B address bus,
 				.doutb(F_output_data[i]),    // Port B RAM output data,
 				.douta(),   // Port A RAM output data, width determined from RAM_WIDTH
 				.dinb(16'b0),     // Port B RAM input data, width determined from RAM_WIDTH
@@ -328,7 +328,6 @@ module formant #(
 		.i(current_i),
 		.e_prev(E_output_data[!emin_write_buffer]),
 		.f_prev(F_output_data[k_req[2]-1]),
-		.f_old(F_output_data[k_req[2]]),
 		.k_req(k_req[0]),
 		.j_req(j_req),
 		.k_write(k_write),
@@ -343,22 +342,10 @@ module formant #(
 		k_req[2] <= k_req[1];
 	end
 
-	//assign F_read_address[k_req[0]-1] = j_req;
-	//assign F_read_address[k_req[0]] = current_i;
-	//See below for restatement
-	
-	always_comb begin 
-		for (integer x = 0; x < FORMANTS; ++x) begin
-			F_read_address[x] = (x == k_req[0]) ? (current_i) : 
-				((x == k_req[0]-1) ? j_req : 0);
-			
-			F_input_data_valid[x] = (x == k_write) & f_output_valid;
-			B_input_data_valid[x] = F_input_data_valid[x];
-		end
-	end
-	
-	assign F_write_address = current_i; // this is true!
-	assign B_write_address = current_i; // this is also true!
+	assign F_read_address = j_req; // can request from all F BRAMs at once
+	assign E_read_address = j_req + 1;
+	assign F_write_address = current_i;
+	assign B_write_address = current_i;
 
 	phi #(
 		.BIT_WIDTH(BIT_WIDTH),

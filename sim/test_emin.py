@@ -28,9 +28,7 @@ async def test_a(dut):
     dut.i.value = i
     dut.input_valid.value = 1
 
-    T_BRAM_queue = [
-        [tobit32(0), tobit32(0), tobit32(0)]
-    ] # use a queue to fake BRAM with two cycle delay
+    T_BRAM_queue = [] # use a queue to fake BRAM with two cycle delay
 
     for _ in range(T):
         # pretend that BRAM has responded
