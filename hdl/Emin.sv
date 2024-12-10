@@ -22,6 +22,9 @@ module emin #(
 	// - then output Emin(j, i) to write to correct buffer
 	// PIPELINE ABOVE SOMEHOW
 	// don't forget delay on T_resp is 2 cycles w.r.t. T_req
+
+	typedef enum {START, REQ_I, CALC} poss_state;
+	poss_state state;
 	
 	signed logic [BIT_WIDTH-1:0] T_i [0:NU_VALUES-1];
 	logic [$clog(I)-1:0] i_reg;
@@ -43,9 +46,6 @@ module emin #(
 	
 	logic valid_pipeline [0:NUM_STAGES-1];
 	// keep track of when pipeline is still calculating
-
-	typedef enum {START, REQ_I, CALC} poss_state;
-	poss_state state;
 
 	logic [BIT_WIDTH-1:0] divisor;
 	logic [BIT_WIDTH-1:0] quotient;
