@@ -78,7 +78,7 @@ def is_runner():
     sys.path.append(str(proj_path / "sim" / "model"))
     filenamehere = TAG+".sv"
     sources = [proj_path / "hdl" / filenamehere]
-    sources += [proj_path / "hdl" / "CosineLookup.v"]
+    sources += [proj_path / "hdl" / "CosineLookup.sv"]
     sources += [proj_path / "hdl" / "Multiply_Real.v"]
     
     

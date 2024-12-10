@@ -79,7 +79,7 @@ def is_runner():
     sources += [proj_path / "hdl" / "Multiply.v"]
     sources += [proj_path / "hdl" / "TwiddleConvert8.v"]
     sources += [proj_path / "hdl" / "Multiply_Real.v"]
-    sources += [proj_path / "hdl" / "HammingWindow.v"]
+    sources += [proj_path / "hdl" / "HammingWindow.sv"]
     sources += [proj_path / "hdl" / "sqrt.sv"]
     
     
