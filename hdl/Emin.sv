@@ -7,10 +7,10 @@ module emin #(
 	input wire [$clog2(I)-1:0] i,
 	input wire input_valid,
 	input wire [BIT_WIDTH-1:0] T_resp [0:NU_VALUES-1],
-	output wire [$clog2(I)-1:0] T_req,
-	output wire [$clog2(I)-1:0] j_out,
-	output wire [BIT_WIDTH-1:0] data_out,
-    output wire output_valid
+	output logic [$clog2(I)-1:0] T_req,
+	output logic [$clog2(I)-1:0] j_out,
+	output logic [BIT_WIDTH-1:0] data_out,
+    output logic output_valid
 );
 	// assumes all of T is computed in T_bram
 	// on first cycle of input valid: receive i
@@ -27,12 +27,12 @@ module emin #(
 	poss_state state;
 	
 	logic signed [BIT_WIDTH-1:0] T_i [0:NU_VALUES-1];
-	logic [$clog(I)-1:0] i_reg;
-	logic [$clog(I)-1:0] j_reg;
+	logic [$clog2(I)-1:0] i_reg;
+	logic [$clog2(I)-1:0] j_reg;
 	logic [1:0] delay;
 
 	parameter NUM_STAGES = 20;
-	logic [5:0][BIT_WIDTH-1:0] pipeline [0:NUM_STAGES-1];
+	logic [BIT_WIDTH-1:0] pipeline [0:NUM_STAGES-1][0:5];
 	// 0: 0 = j
 	// 1:
 	// 2: 1 = r(0, j-1, i), 2 = r(1, j-1, i), 3 = r(2, j-1, i)
@@ -46,6 +46,12 @@ module emin #(
 	
 	logic valid_pipeline [0:NUM_STAGES-1];
 	// keep track of when pipeline is still calculating
+
+	logic [BIT_WIDTH-1:0] r0, r1, r2, stage2j;
+	assign stage2j = pipeline[1][0];
+	assign r0 = (pipeline[1][0]) ? ($signed(T_i[0]) - $signed(T_resp[0])) : $signed(T_i[0]);
+	assign r1 = (pipeline[1][0]) ? ($signed(T_i[1]) - $signed(T_resp[1])) : $signed(T_i[1]);
+	assign r2 = (pipeline[1][0]) ? ($signed(T_i[2]) - $signed(T_resp[2])) : $signed(T_i[2]);
 
 	logic [BIT_WIDTH-1:0] divisor;
 	logic [BIT_WIDTH-1:0] quotient;
@@ -115,31 +121,25 @@ module emin #(
 	assign b_factor[7] = signed_quotient;
 	assign b_factor[8] = signed_quotient;
 
-	logic signed [BITWIDTH-1:0] alpha_k_num;
-	logic signed [BITWIDTH-1:0] beta_k_num;
-	logic signed [BITWIDTH-1:0] denom;
-	logic signed [BITWIDTH-1:0] abs_denom;
-	logic signed [BITWIDTH-1:0] signed_quotient;
+	logic signed [BIT_WIDTH-1:0] alpha_k_num;
+	logic signed [BIT_WIDTH-1:0] beta_k_num;
+	logic signed [BIT_WIDTH-1:0] denom;
+	logic signed [BIT_WIDTH-1:0] abs_denom;
+	logic signed [BIT_WIDTH-1:0] signed_quotient;
+	logic signed [BIT_WIDTH-2:0] flipped_quotient;
 
 	assign alpha_k_num = $signed(mult_res[0]) - $signed(mult_res[1]);
 	assign beta_k_num = $signed(mult_res[4]) - $signed(mult_res[3]);
 	assign denom = $signed(mult_res[2]) - $signed(mult_res[3]);
 	
-	always_comb begin
-		if (denom[31]) begin // positive
-			abs_denom = denom;
-		end else begin
-			abs_denom = ~denom + 1;
-		end
-		// combine quotient with sign_pipeline[18]
-		// assume quotient[31] is 0,
-		// i.e. it's actually <= 31 bit unsigned integer, so flip as normal
-		if (sign_pipeline[18]) begin
-			signed_quotient = $signed({1'b1, ~quotient[31:0] + 1});
-		end else begin
-			signed_quotient = $signed({1'b0, quotient[31:0]});
-		end
-	end
+	assign abs_denom = (denom[31]) ? denom : ~denom + 1;
+
+	// combine quotient with sign_pipeline[18]
+	// assume quotient[31] is 0,
+	// i.e. it's actually <= 31 bit unsigned integer, so flip as normal
+	assign flipped_quotient = ~quotient[30:0] + 1; // need to split into two steps bc cocotb
+	assign signed_quotient = (sign_pipeline[18]) ? $signed({1'b1, flipped_quotient}) : $signed({1'b0, quotient[30:0]});
+
 
 	always_ff @(posedge clk_in) begin
 		if (rst_in) begin
@@ -164,11 +164,14 @@ module emin #(
 					end
 				end
 				REQ_I: begin
-					if (delay > 0) begin
+					if (delay) begin
 						delay <= delay - 1;
 					end else begin
 						// received
-						T_i <= T_resp;
+						// T_i <= T_resp; cocotb can't simulate this
+						for (integer b = 0; b < NU_VALUES; ++b) begin
+							T_i[b] <= T_resp[b];
+						end
 						j_reg <= 0;
 						state <= CALC;
 					end
@@ -191,21 +194,18 @@ module emin #(
 					for (integer stage = 1; stage < NUM_STAGES; ++stage) begin
 						if (stage != 2 && stage != 3 && stage != 19) begin
 							// pass on value
-							pipeline[stage] <= pipeline[stage-1];
+							// pipeline[stage] <= pipeline[stage-1]; doesn't work on cocotb
+							for (integer entry = 0; entry <= 5; ++entry) begin
+								pipeline[stage][entry] <= pipeline[stage-1][entry];
+							end
 							sign_pipeline[stage] <= sign_pipeline[stage-1];
 							valid_pipeline[stage] <= valid_pipeline[stage-1];
 						end else if (stage == 2) begin
 							// calculate values from T_resp which just came in
 							pipeline[stage][0] <= pipeline[stage-1][0];
-							if (pipeline[stage-1][0]) begin // received T(x, j-1) on T_resp
-								pipeline[stage][1] <= $signed(T_i[0]) - $signed(T_resp[0]);
-								pipeline[stage][2] <= $signed(T_i[1]) - $signed(T_resp[1]);
-								pipeline[stage][3] <= $signed(T_i[2]) - $signed(T_resp[2]);
-							end else begin // j == 0 case, continue
-								pipeline[stage][1] <= T_i[0];
-								pipeline[stage][2] <= T_i[1];
-								pipeline[stage][3] <= T_i[2];
-							end
+							pipeline[stage][1] <= r0;
+							pipeline[stage][2] <= r1;
+							pipeline[stage][3] <= r2;
 							pipeline[stage][4] <= pipeline[stage-1][4];
 							pipeline[stage][5] <= pipeline[stage-1][5];
 							sign_pipeline[stage] <= sign_pipeline[stage-1];
@@ -220,22 +220,22 @@ module emin #(
 							pipeline[stage][5] <= beta_k_num;
 							sign_pipeline[stage] <= denom[31];
 							valid_pipeline[stage] <= valid_pipeline[stage-1];
-							divisor <= abs_denom;
+							divisor <= (abs_denom) ? abs_denom : 1; // avoid problem with 1
 						end else begin
 							// stage == 19, form alpha_k, beta_k
 							pipeline[stage][0] <= pipeline[stage-1][0];
 							pipeline[stage][1] <= pipeline[stage-1][1];
 							pipeline[stage][2] <= pipeline[stage-1][2];
 							pipeline[stage][3] <= pipeline[stage-1][3];
-							pipeline[stage][4] <= multi_res[7];
-							pipeline[stage][5] <= multi_res[8];
+							pipeline[stage][4] <= mult_res[7];
+							pipeline[stage][5] <= mult_res[8];
 							sign_pipeline[stage] <= sign_pipeline[stage-1];
 							valid_pipeline[stage] <= valid_pipeline[stage-1];
 						end
 					end
 					if (valid_pipeline[NUM_STAGES-1]) begin
 						j_out <= pipeline[NUM_STAGES-1][0];
-						data_out <= $signed(pipeline[NUM_STAGES-1][1]) - $signed(multi_res[5]) - $signed(multi_res[6]);
+						data_out <= $signed(pipeline[NUM_STAGES-1][1]) - $signed(mult_res[5]) - $signed(mult_res[6]);
 						output_valid <= 1'b1;
 						if (pipeline[NUM_STAGES-1][0] == i) begin // we output the last one
 							state <= START;

@@ -39,7 +39,7 @@ module f #(
 
 	parameter NUM_STAGES = 4;
 	logic signed [$clog2(I):0] j_pipeline [0:NUM_STAGES-1];
-	logic [$clog(FORMANTS)-1:0] k_pipeline [0:NUM_STAGES-1];
+	logic [$clog2(FORMANTS)-1:0] k_pipeline [0:NUM_STAGES-1];
 	// 0: send in k, j
 	// 1:
 	// 2: receive F(k-1,j), Emin(j+1,i), write F(k,i), B(k,i)

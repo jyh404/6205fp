@@ -13,12 +13,13 @@ TAG = "T"
 
 @cocotb.test()
 async def test_a(dut):
-    """cocotb test for lightweight sqrt module"""
+    """cocotb test for T module"""
     dut._log.info("Starting...")
     cocotb.start_soon(Clock(dut.clk_in, 10, units="ns").start())
     dut.rst_in.value = 1
     dut.fft_valid = 0
     await ClockCycles(dut.clk_in,3)
+    dut.rst_in.value = 0
     for i in range(160):
         dut.fft_valid.value = 1
         dut.fft_data.value = 2**31-1
@@ -70,7 +71,7 @@ async def test_a(dut):
 
 
 def is_runner():
-    """FFT Tester."""
+    """T function Tester."""
     hdl_toplevel_lang = os.getenv("HDL_TOPLEVEL_LANG", "verilog")
     sim = os.getenv("SIM", "icarus")
     proj_path = Path(__file__).resolve().parent.parent
