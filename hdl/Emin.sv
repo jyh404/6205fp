@@ -8,8 +8,8 @@ module emin #(
 	input wire input_valid,
 	input wire [BIT_WIDTH-1:0] T_resp [0:NU_VALUES-1],
 	output wire [$clog2(I)-1:0] T_req,
-	output wire [$clog2(I)-1:0] j,
-	output wire [BIT_WIDTH-1:0] data,
+	output wire [$clog2(I)-1:0] j_out,
+	output wire [BIT_WIDTH-1:0] data_out,
     output wire output_valid
 );
 	// assumes all of T is computed in T_bram
@@ -48,7 +48,6 @@ module emin #(
 	poss_state state;
 
 	logic [BIT_WIDTH-1:0] divisor;
-	logic divisor_valid;
 	logic [BIT_WIDTH-1:0] quotient;
 
 	divider4 #(
@@ -87,15 +86,15 @@ module emin #(
 	endgenerate
 
 	// now assign our multipliers
-	// 0 is r(0) r(1)
-	// 1 is r(1) r(2)
-	// 2 is r(0) r(0)
-	// 3 is r(1) r(1)
-	// 4 is r(0) r(2)
-	// 5 is r(1) alpha_k
-	// 6 is r(2) beta_k
-	// 7 is alpha_k_num 1/denom sign
-	// 8 is beta_k_num 1/denom sign
+	// 0 is stage 2 r(0) r(1)
+	// 1 is stage 2 r(1) r(2)
+	// 2 is stage 2 r(0) r(0)
+	// 3 is stage 2 r(1) r(1)
+	// 4 is stage 2 r(0) r(2)
+	// 5 is stage 19 r(1) alpha_k
+	// 6 is stage 19 r(2) beta_k
+	// 7 is stage 18 alpha_k_num (1/denom*sign)
+	// 8 is stage 18 beta_k_num (1/denom*sign)
 	assign a_factor[0] = pipeline[2][1];
 	assign a_factor[1] = pipeline[2][2];
 	assign a_factor[2] = pipeline[2][1];
@@ -144,12 +143,12 @@ module emin #(
 
 	always_ff @(posedge clk_in) begin
 		if (rst_in) begin
-			for (integer b = 0; b < NU_VALUES; ++b) begin
+			integer b;
+			for (b = 0; b < NU_VALUES; ++b) begin
 				T_i[b] <= 0;
-				T_j[b] <= 0;
 			end
 			state <= START;
-			for (integer b = 0; b < NUM_STAGES; ++b) begin
+			for (b = 0; b < NUM_STAGES; ++b) begin
 				valid_pipeline[b] <= 1'b0;
 			end
 			output_valid <= 1'b0;
@@ -194,11 +193,10 @@ module emin #(
 							// pass on value
 							pipeline[stage] <= pipeline[stage-1];
 							sign_pipeline[stage] <= sign_pipeline[stage-1];
+							valid_pipeline[stage] <= valid_pipeline[stage-1];
 						end else if (stage == 2) begin
 							// calculate values from T_resp which just came in
 							pipeline[stage][0] <= pipeline[stage-1][0];
-							pipeline[stage][4] <= pipeline[stage-1][4];
-							pipeline[stage][5] <= pipeline[stage-1][5];
 							if (pipeline[stage-1][0]) begin // received T(x, j-1) on T_resp
 								pipeline[stage][1] <= $signed(T_i[0]) - $signed(T_resp[0]);
 								pipeline[stage][2] <= $signed(T_i[1]) - $signed(T_resp[1]);
@@ -208,7 +206,10 @@ module emin #(
 								pipeline[stage][2] <= T_i[1];
 								pipeline[stage][3] <= T_i[2];
 							end
+							pipeline[stage][4] <= pipeline[stage-1][4];
+							pipeline[stage][5] <= pipeline[stage-1][5];
 							sign_pipeline[stage] <= sign_pipeline[stage-1];
+							valid_pipeline[stage] <= valid_pipeline[stage-1];
 						end else if (stage == 3) begin
 							// calculate alpha_k num, beta_k num, denom to divisor
 							pipeline[stage][0] <= pipeline[stage-1][0];
@@ -218,6 +219,7 @@ module emin #(
 							pipeline[stage][4] <= alpha_k_num;
 							pipeline[stage][5] <= beta_k_num;
 							sign_pipeline[stage] <= denom[31];
+							valid_pipeline[stage] <= valid_pipeline[stage-1];
 							divisor <= abs_denom;
 						end else begin
 							// stage == 19, form alpha_k, beta_k
@@ -227,11 +229,13 @@ module emin #(
 							pipeline[stage][3] <= pipeline[stage-1][3];
 							pipeline[stage][4] <= multi_res[7];
 							pipeline[stage][5] <= multi_res[8];
+							sign_pipeline[stage] <= sign_pipeline[stage-1];
+							valid_pipeline[stage] <= valid_pipeline[stage-1];
 						end
 					end
 					if (valid_pipeline[NUM_STAGES-1]) begin
-						j <= pipeline[NUM_STAGES-1][0];
-						data <= $signed(pipeline[NUM_STAGES-1][1]) - $signed(multi_res[5]) - $signed(multi_res[6]);
+						j_out <= pipeline[NUM_STAGES-1][0];
+						data_out <= $signed(pipeline[NUM_STAGES-1][1]) - $signed(multi_res[5]) - $signed(multi_res[6]);
 						output_valid <= 1'b1;
 						if (pipeline[NUM_STAGES-1][0] == i) begin // we output the last one
 							state <= START;
