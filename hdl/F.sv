@@ -38,7 +38,7 @@ module f #(
 	logic [1:0] delay;
 
 	parameter NUM_STAGES = 4;
-	signed logic [$clog2(I):0] j_pipeline [0:NUM_STAGES-1];
+	logic signed [$clog2(I):0] j_pipeline [0:NUM_STAGES-1];
 	logic [$clog(FORMANTS)-1:0] k_pipeline [0:NUM_STAGES-1];
 	// 0: send in k, j
 	// 1:
