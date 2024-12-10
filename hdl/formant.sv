@@ -1,7 +1,7 @@
 module formant #(
 	parameter BIT_WIDTH = 32, 
 	parameter I = 160, 
-	parameter FORMANTS = 4
+	parameter FORMANTS = 5
 ) (
 	input wire clk_in,
 	input wire rst_in,
@@ -22,30 +22,29 @@ module formant #(
 	logic [I_WIDTH-1:0] T_read_address;
 	logic [BIT_WIDTH-1:0] T_output_data [0:NU_VALUES-1];
 
-	// Emin BRAM Is the loss of having a segment (addr,f) for each f
-	// We are doing a rolling buffer for this.
-	// When one set of (addr,f) is being used, (addr, f+1) is being calculated.
-	localparam E_BUFFERS = 2;
+	// Emin BRAM is the loss of having a segment (addr,f) for each f
+	// We could use a rolling buffer, but currently we are calculating all of Emin(x, i), then calculate all of F(k, i)
+	// without any simultaneous calculation of Emin during F, so one BRAM suffices
 	logic [I_WIDTH-1:0] E_write_address;
 	logic [BIT_WIDTH-1:0] E_input_data;
-	logic E_input_data_valid [0:E_BUFFERS-1];
-	logic [I_WIDTH-1:0] E_read [0:E_BUFFERS-1];
-	logic [BIT_WIDTH-1:0] E_output_data [0:E_BUFFERS-1];
+	logic E_input_data_valid;
+	logic [I_WIDTH-1:0] E_read_address;
+	logic [BIT_WIDTH-1:0] E_output_data;
 
 	// F BRAM Is the loss of having k segments up to addr
 	// There is one BRAM for each possible number of formants.
 	logic [I_WIDTH-1:0] F_write_address;
 	logic [BIT_WIDTH-1:0] F_input_data;
 	logic F_input_data_valid [0:FORMANTS-1];
-	logic [I_WIDTH-1:0] F_read_address [0:FORMANTS-1];
+	logic [I_WIDTH-1:0] F_read_address;
 	logic [BIT_WIDTH-1:0] F_output_data [0:FORMANTS-1];
 
-	// B BRAM Used the store the optimal place for the next segment boundary.
+	// B BRAM Used to store the optimal place for the next segment boundary.
 	// Traceback to get the optimal segment placement.
 	logic [I_WIDTH-1:0] B_write_address;
 	logic [BIT_WIDTH-1:0] B_input_data;
 	logic B_input_data_valid [0:FORMANTS-1];
-	logic [I_WIDTH-1:0] B_read_address [0:FORMANTS-1];
+	logic [I_WIDTH-1:0] B_read_address;
 	logic [BIT_WIDTH-1:0] B_output_data [0:FORMANTS-1];
 
 	generate
@@ -69,7 +68,7 @@ module formant #(
 				.addrb(T_read_address),   // Port B address bus,
 				.doutb(T_output_data[i]),    // Port B RAM output data,
 				.douta(),   // Port A RAM output data, width determined from RAM_WIDTH
-				.dinb(16'b0),     // Port B RAM input data, width determined from RAM_WIDTH
+				.dinb(0),     // Port B RAM input data, width determined from RAM_WIDTH
 				.web(1'b0),       // Port B write enable
 				.ena(1'b1),       // Port A RAM Enable
 				.enb(1'b1),       // Port B RAM Enable,
@@ -80,34 +79,32 @@ module formant #(
 			);
 		end
 		
-		//E[0,1] is a rolling buffer for the calculation of the next frequency sample.
-		for (i = 0; i < E_BUFFERS; ++i) begin
-			xilinx_true_dual_port_read_first_1_clock_ram #(
-				.RAM_WIDTH(BIT_WIDTH),
-				.RAM_DEPTH(I),
-				.RAM_PERFORMANCE("HIGH_PERFORMANCE")
-			) 
-			Emin_bram
-			(
-				.clka(clk_in),     // Clock
-				//writing port:
-				.addra(E_write_address),   // Port A address bus,
-				.dina(E_input_data),     // Port A RAM input data
-				.wea(E_input_data_valid[i]),       // Port A write enable
-				//reading port:
-				.addrb(E_read[i]),   // Port B address bus,
-				.doutb(E_output_data[i]),    // Port B RAM output data,
-				.douta(),   // Port A RAM output data, width determined from RAM_WIDTH
-				.dinb(16'b0),     // Port B RAM input data, width determined from RAM_WIDTH
-				.web(1'b0),       // Port B write enable
-				.ena(1'b1),       // Port A RAM Enable
-				.enb(1'b1),       // Port B RAM Enable,
-				.rsta(1'b0),     // Port A output reset
-				.rstb(1'b0),     // Port B output reset
-				.regcea(1'b1), // Port A output register enable
-				.regceb(1'b1) // Port B output register enable
-			);
-		end
+		//Emin calculation of the next frequency sample.
+		xilinx_true_dual_port_read_first_1_clock_ram #(
+			.RAM_WIDTH(BIT_WIDTH),
+			.RAM_DEPTH(I),
+			.RAM_PERFORMANCE("HIGH_PERFORMANCE")
+		) 
+		Emin_bram
+		(
+			.clka(clk_in),     // Clock
+			//writing port:
+			.addra(E_write_address),   // Port A address bus,
+			.dina(E_input_data),     // Port A RAM input data
+			.wea(E_input_data_valid),       // Port A write enable
+			//reading port:
+			.addrb(E_read_address),   // Port B address bus,
+			.doutb(E_output_data),    // Port B RAM output data,
+			.douta(),   // Port A RAM output data, width determined from RAM_WIDTH
+			.dinb(0),     // Port B RAM input data, width determined from RAM_WIDTH
+			.web(1'b0),       // Port B write enable
+			.ena(1'b1),       // Port A RAM Enable
+			.enb(1'b1),       // Port B RAM Enable,
+			.rsta(1'b0),     // Port A output reset
+			.rstb(1'b0),     // Port B output reset
+			.regcea(1'b1), // Port A output register enable
+			.regceb(1'b1) // Port B output register enable
+		);
 		
 		//F[p] is the loss of (0,addr) if p formants were used.
 		for (i = 0; i < FORMANTS; ++i) begin
@@ -124,10 +121,10 @@ module formant #(
 				.dina(F_input_data),     // Port A RAM input data
 				.wea(F_input_data_valid[i]),       // Port A write enable
 				//reading port:
-				.addrb(F_read_address[i]),   // Port B address bus,
+				.addrb(F_read_address),   // Port B address bus,
 				.doutb(F_output_data[i]),    // Port B RAM output data,
 				.douta(),   // Port A RAM output data, width determined from RAM_WIDTH
-				.dinb(16'b0),     // Port B RAM input data, width determined from RAM_WIDTH
+				.dinb(0),     // Port B RAM input data, width determined from RAM_WIDTH
 				.web(1'b0),       // Port B write enable
 				.ena(1'b1),       // Port A RAM Enable
 				.enb(1'b1),       // Port B RAM Enable,
@@ -137,13 +134,12 @@ module formant #(
 				.regceb(1'b1) // Port B output register enable
 			);
 
+			//B[p] is the location of the next segment boundary if p segments are used.
 			xilinx_true_dual_port_read_first_1_clock_ram #(
 				.RAM_WIDTH(BIT_WIDTH),
 				.RAM_DEPTH(I),
 				.RAM_PERFORMANCE("HIGH_PERFORMANCE")
 			) 
-			
-			//B[p] is the location of the next segment boundary if p segments are used.
 			B_bram
 			(
 				.clka(clk_in),     // Clock
@@ -152,10 +148,10 @@ module formant #(
 				.dina(B_input_data),     // Port A RAM input data
 				.wea(B_input_data_valid[i]),       // Port A write enable
 				//reading port:
-				.addrb(B_read_address[i]),   // Port B address bus,
+				.addrb(B_read_address),   // Port B address bus,
 				.doutb(B_output_data[i]),    // Port B RAM output data,
 				.douta(),   // Port A RAM output data, width determined from RAM_WIDTH
-				.dinb(16'b0),     // Port B RAM input data, width determined from RAM_WIDTH
+				.dinb(0),     // Port B RAM input data, width determined from RAM_WIDTH
 				.web(1'b0),       // Port B write enable
 				.ena(1'b1),       // Port A RAM Enable
 				.enb(1'b1),       // Port B RAM Enable,
@@ -171,9 +167,11 @@ module formant #(
 	poss_state state;
 
 	logic [I_WIDTH-1:0] current_i;
+	
+	// for traceback
 	logic [I_WIDTH-1:0] segment_values [0:FORMANTS];
 	logic [$clog2(FORMANTS)-1:0] segment;
-	logic [1:0] delay;
+	logic delay;
 
 	// phi functions
 	logic phi_input_valid;
@@ -188,18 +186,22 @@ module formant #(
 		end else begin
 			case (state)
 				START: begin
+					current_i <= 0;
 					if (fft_valid) begin
+						// FFT data is starting to arrive
 						state <= T_CALC;
 					end
 				end
 				T_CALC: begin
-					if (T_write_address == I - 1) begin
+					if (T_write_address == I) begin
+						// we have written the last T value
 						state <= EMIN_CALC;
-						current_i <= 0;
 					end
 				end
 				EMIN_CALC: begin
-					if (E_write_address == I - 1) begin
+					emin_input_valid <= 1'b0;
+					if (E_write_address == I) begin
+						// we have written the last Emin value
 						state <= F_CALC;
 						f_begin_iter <= 1'b1;
 					end
@@ -207,33 +209,34 @@ module formant #(
 				F_CALC: begin
 					f_begin_iter <= 1'b0;
 					if (f_iter_done) begin
-						if (current_i < I - 1) begin
+						if (current_i < I) begin
 							state <= EMIN_CALC;
 							current_i <= current_i + 1;
+							emin_input_valid <= 1'b1;
 						end else begin
 							state <= SEGMENT_CALC;
 							segment <= FORMANTS;
-							segment_values[FORMANTS] <= I-1;
-							delay <= 2'b10;
-							B_read_address[FORMANTS-1] <= segment_values[FORMANTS];
+							segment_values[FORMANTS] <= I;
+							delay <= 1'b1;
+							B_read_address <= segment_values[FORMANTS];
 						end
 					end
 				end
 				SEGMENT_CALC: begin
-					if (segment > 0) begin
-						if (delay == 2'b00) begin
-							delay <= 2'b10;
+					if (segment) begin
+						if (delay) begin
+							delay <= delay - 1;
+						end else begin
+							delay <= 1'b1;
 							segment_values[segment-1] <= B_output_data[segment-1];
 							if (segment > 1) begin
-								B_read_address[segment-2] <= B_output_data[segment-1];
+								B_read_address <= B_output_data[segment-1];
 							end
 							segment <= segment - 1;
-						end else begin
-							delay <= delay - 1;
 						end
 					end else begin
 						state <= PHI_CALC;
-						delay <= 2'b10;
+						delay <= 1'b1;
 						T_read_address <= segment_values[1];
 						segment <= 1;
 						phi_input_start <= 1'b1;
@@ -244,21 +247,21 @@ module formant #(
 					// don't do any fancy stuff
 					phi_input_start <= 1'b0;
 					if (segment < FORMANTS) begin
-						if (delay == 2'b00) begin
-							delay <= 2'b10;
+						if (delay) begin
+							delay <= delay - 1;
+							phi_input_valid <= 1'b0;
+						end else begin
+							delay <= 1'b1;
 							phi_input_valid <= 1'b1;
 							T_read_address <= segment_values[segment+1];
 							segment <= segment + 1;
-						end else begin
-							delay <= delay - 1;
-							phi_input_valid <= 1'b0;
 						end
 					end else if (phi_output_valid) begin
 						state <= FINAL;
 					end
 				end
 				FINAL: begin
-					// multiply phi_output by 5000/pi
+					// phi_output already multiplied by 5000/pi
 					formant_valid <= 1'b1;
 				end
 			endcase
@@ -281,8 +284,6 @@ module formant #(
 	);
 
 	logic emin_input_valid;
-	logic emin_write_buffer = current_i[0]; // buffer depends on i
-	logic emin_output_valid;
 
 	emin #(
 		.BIT_WIDTH(BIT_WIDTH),
@@ -297,14 +298,8 @@ module formant #(
 		.T_req(T_read_address),
 		.j(E_write_address),
 		.data(E_input_data),
-		.output_valid(emin_output_valid)
+		.output_valid(E_input_data_valid)
 	);
-
-	// direct which buffer we are writing to
-	//assign E_input_data_valid[emin_write_buffer] = emin_output_valid;
-	//assign E_input_data_valid[!emin_write_buffer] = 1'b0;
-	assign E_input_data_valid[0] = (emin_write_buffer == 1'b1) ? 1'b0 : emin_output_valid;
-	assign E_input_data_valid[1] = (emin_write_buffer == 1'b1) ? emin_output_valid : 1'b0;
 	
 
 	// need to pipeline k_req to make sure we pass the correct
@@ -328,7 +323,6 @@ module formant #(
 		.i(current_i),
 		.e_prev(E_output_data[!emin_write_buffer]),
 		.f_prev(F_output_data[k_req[2]-1]),
-		.f_old(F_output_data[k_req[2]]),
 		.k_req(k_req[0]),
 		.j_req(j_req),
 		.k_write(k_write),
@@ -343,22 +337,10 @@ module formant #(
 		k_req[2] <= k_req[1];
 	end
 
-	//assign F_read_address[k_req[0]-1] = j_req;
-	//assign F_read_address[k_req[0]] = current_i;
-	//See below for restatement
-	
-	always_comb begin 
-		for (integer x = 0; x < FORMANTS; ++x) begin
-			F_read_address[x] = (x == k_req[0]) ? (current_i) : 
-				((x == k_req[0]-1) ? j_req : 0);
-			
-			F_input_data_valid[x] = (x == k_write) & f_output_valid;
-			B_input_data_valid[x] = F_input_data_valid[x];
-		end
-	end
-	
-	assign F_write_address = current_i; // this is true!
-	assign B_write_address = current_i; // this is also true!
+	assign F_read_address = j_req; // can request from all F BRAMs at once
+	assign E_read_address = j_req + 1;
+	assign F_write_address = current_i;
+	assign B_write_address = current_i;
 
 	phi #(
 		.BIT_WIDTH(BIT_WIDTH),
