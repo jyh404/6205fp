@@ -72,13 +72,17 @@ module divider2b #(parameter WIDTH = 64) (input wire clk_in,
   //extra:
   logic [WIDTH-1:0] p_temp;
   logic [WIDTH-1:0] div_temp;
+  logic [WIDTH-1:0] temp_A; // because cocotb needs this
+  logic [WIDTH-1:0] temp_B; // because cocotb needs this
+  assign temp_A = {p[WIDTH-2:0],dividend[WIDTH-1]};
+  assign temp_B = {dividend[WIDTH-2:0],1'b1};
   always_comb begin
-    if ({p[WIDTH-2:0],dividend[WIDTH-1]}>=divisor[WIDTH-1:0])begin
-      p_temp = {p[WIDTH-2:0],dividend[WIDTH-1]} - divisor[WIDTH-1:0];
-      div_temp = {dividend[WIDTH-2:0],1'b1};
+    if (temp_A>=divisor[WIDTH-1:0])begin
+      p_temp = temp_A - divisor[WIDTH-1:0];
+      div_temp = temp_B;
     end else begin
-      p_temp = {p[WIDTH-2:0],dividend[WIDTH-1]};
-      div_temp = {dividend[WIDTH-2:0],1'b0};
+      p_temp = temp_A;
+      div_temp = temp_B;
     end
   end
 endmodule

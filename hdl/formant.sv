@@ -183,6 +183,9 @@ module formant #(
 		if (rst_in) begin
 			state <= START;
 			current_i <= 0;
+			for (integer b = 0; b <= FORMANTS; ++b) begin
+				segment_values[b] <= 0;
+			end
 		end else begin
 			case (state)
 				START: begin
@@ -259,7 +262,10 @@ module formant #(
 					end else if (phi_output_valid) begin
 						state <= START;
 						formant_valid <= 1'b1;
-						formant_freq <= phi_output;
+						// formant_freq <= phi_output; // cocotb does not support this
+						for (integer b = 0; b < FORMANTS; ++b) begin
+							formant_freq[b] <= phi_output[b];
+						end
 					end
 				end
 			endcase
@@ -294,14 +300,14 @@ module formant #(
 		.input_valid(emin_input_valid),
 		.T_resp(T_output_data),
 		.T_req(T_read_address),
-		.j(E_write_address),
-		.data(E_input_data),
+		.j_out(E_write_address),
+		.data_out(E_input_data),
 		.output_valid(E_input_data_valid)
 	);
 
 	// need to pipeline k_req to make sure we pass the correct
 	// F(k-1,j) that was requested two cycles ago
-	logic [I_WIDTH-1:0] k_req [0:2];
+	logic [$clog2(FORMANTS)-1:0] k_req [0:2];
 	logic [I_WIDTH-1:0] j_req;
 	logic [$clog2(FORMANTS)-1:0] k_write;
 	logic f_output_valid;

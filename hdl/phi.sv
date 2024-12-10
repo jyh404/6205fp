@@ -271,8 +271,7 @@ module phi #(
 	//might be done by bimary search
 	//256 values
 	//followed by linear interpolation (done by binary search)
-	acos#(.BIT_WIDTH(BITWIDTH))
-	acos_calc(
+	acos acos_calc(
 		.clk_in(clk_in),
 		.acos_in(to_acos),
 		.acos_out(acos_data)

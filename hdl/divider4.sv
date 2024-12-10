@@ -35,7 +35,7 @@ module divider4 #(parameter WIDTH = 64) (input wire clk_in,
         dividend[0] = {dividend_in[WIDTH-2:0],1'b0};
       end
     end
-    for (int i=2; i<BIT_WIDTH; i=i+2)begin
+    for (int i=2; i<WIDTH; i=i+2)begin
       data_valid[i] = data_valid[i-1];
       if ({p[i-1][WIDTH-2:0],dividend[i-1][WIDTH-1]}>=divisor[i-1][WIDTH-1:0])begin
         p[i] = {p[i-1][WIDTH-2:0],dividend[i-1][WIDTH-1]} - divisor[i-1][WIDTH-1:0];
@@ -49,7 +49,7 @@ module divider4 #(parameter WIDTH = 64) (input wire clk_in,
   end
 
   always_ff @(posedge clk_in)begin
-    for (int i=1; i<BIT_WIDTH; i=i+2)begin
+    for (int i=1; i<WIDTH; i=i+2)begin
       data_valid[i] <= data_valid[i-1];
       if ({p[i-1][WIDTH-2:0],dividend[i-1][WIDTH-1]}>=divisor[i-1][WIDTH-1:0])begin
         p[i] <= {p[i-1][WIDTH-2:0],dividend[i-1][WIDTH-1]} - divisor[i-1][WIDTH-1:0];
