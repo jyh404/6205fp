@@ -54,32 +54,7 @@ async def test_a(dut):
             )
         dut.T_resp.value = T_BRAM_queue[0]
         T_BRAM_queue.pop(0)
-        dut._log.info(f"NEW CYCLE")
-        dut._log.info(f"state: {dut.state.value}")
-        dut._log.info(f"delay: {dut.delay.value}")
-        dut._log.info(f"T_resp[0]: {dut.T_resp[0].value}")
-        dut._log.info(f"T_resp[1]: {dut.T_resp[1].value}")
-        dut._log.info(f"T_resp[2]: {dut.T_resp[2].value}")
-        dut._log.info(f"T_i[0]: {dut.T_i[0].value}")
-        dut._log.info(f"T_i[1]: {dut.T_i[1].value}")
-        dut._log.info(f"T_i[2]: {dut.T_i[2].value}")
-        dut._log.info(f"stage2j: {dut.stage2j.value}")
-        dut._log.info(f"r0: {dut.r0.value}")
-        dut._log.info(f"r1: {dut.r1.value}")
-        dut._log.info(f"r2: {dut.r2.value}")
-        for a in range(9):
-            dut._log.info(f"a_factor[{a}]: {dut.a_factor[a].value}")
-            dut._log.info(f"b_factor[{a}]: {dut.b_factor[a].value}")
-            dut._log.info(f"mult_res[{a}]: {dut.mult_res[a].value}")
-        dut._log.info(f"alpha_k_num: {dut.alpha_k_num.value}")
-        dut._log.info(f"beta_k_num: {dut.beta_k_num.value}")
-        dut._log.info(f"denom: {dut.denom.value}")
-        dut._log.info(f"T_req: {dut.T_req.value}")
-        dut._log.info(f"j_reg: {dut.j_reg.value}")
-        dut._log.info(f"valid_pipeline: {dut.valid_pipeline.value}")
-        dut._log.info(f"j_out: {dut.j_out.value}")
-        dut._log.info(f"data_out: {dut.data_out.value}")
-        dut._log.info(f"output_valid: {dut.output_valid.value}")
+        # honestly just look at waveform
         await ClockCycles(dut.clk_in, 1)
 
 def is_runner():

@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 `default_nettype none
 
-module divider4 #(parameter WIDTH = 32) (input wire clk_in,
+module divider4 #(parameter WIDTH = 64) (input wire clk_in,
                 input wire rst_in,
                 input wire[WIDTH-1:0] dividend_in,
                 input wire[WIDTH-1:0] divisor_in,

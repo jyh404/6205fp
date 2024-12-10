@@ -32,7 +32,7 @@ module emin #(
 	logic delay;
 
 	parameter NUM_STAGES = 20;
-	logic [BIT_WIDTH-1:0] pipeline [0:NUM_STAGES-1][0:5];
+	logic signed [BIT_WIDTH-1:0] pipeline [0:NUM_STAGES-1][0:5];
 	// 0: 0 = j
 	// 1:
 	// 2: 1 = r(0, j-1, i), 2 = r(1, j-1, i), 3 = r(2, j-1, i)
@@ -47,22 +47,21 @@ module emin #(
 	logic valid_pipeline [0:NUM_STAGES-1];
 	// keep track of when pipeline is still calculating
 
-	logic [BIT_WIDTH-1:0] r0, r1, r2, stage2j;
-	assign stage2j = pipeline[1][0];
+	logic signed [BIT_WIDTH-1:0] r0, r1, r2;
 	assign r0 = (pipeline[1][0]) ? ($signed(T_i[0]) - $signed(T_resp[0])) : $signed(T_i[0]);
 	assign r1 = (pipeline[1][0]) ? ($signed(T_i[1]) - $signed(T_resp[1])) : $signed(T_i[1]);
 	assign r2 = (pipeline[1][0]) ? ($signed(T_i[2]) - $signed(T_resp[2])) : $signed(T_i[2]);
 
-	logic [BIT_WIDTH-1:0] divisor;
-	logic [BIT_WIDTH-1:0] quotient;
+	logic [2*BIT_WIDTH-1:0] divisor;
+	logic [2*BIT_WIDTH-1:0] quotient;
 
 	divider4 #(
-		.WIDTH(BIT_WIDTH)
+		.WIDTH(2*BIT_WIDTH)
 	)
 	divider (
 		.clk_in(clk_in),
 		.rst_in(rst_in),
-		.dividend_in(1<<(BIT_WIDTH-1)),
+		.dividend_in(~64'b0), // be careful about how large our outputs are
 		.divisor_in(divisor),
 		.data_valid_in(1'b1),
 		.quotient_out(quotient),
@@ -99,8 +98,8 @@ module emin #(
 	// 4 is stage 2 r(0) r(2)
 	// 5 is stage 19 r(1) alpha_k
 	// 6 is stage 19 r(2) beta_k
-	// 7 is stage 18 alpha_k_num (1/denom*sign)
-	// 8 is stage 18 beta_k_num (1/denom*sign)
+	// 7 is stage 18 alpha_k_num (1/denom*sign = signed_quotient)
+	// 8 is stage 18 beta_k_num (1/denom*sign = signed_quotient)
 	assign a_factor[0] = pipeline[2][1];
 	assign a_factor[1] = pipeline[2][2];
 	assign a_factor[2] = pipeline[2][1];
@@ -125,20 +124,23 @@ module emin #(
 	logic signed [BIT_WIDTH-1:0] beta_k_num;
 	logic signed [BIT_WIDTH-1:0] denom;
 	logic signed [BIT_WIDTH-1:0] abs_denom;
-	logic signed [BIT_WIDTH-1:0] signed_quotient;
+	logic signed [BIT_WIDTH-1:0] trunc_quotient;
 	logic signed [BIT_WIDTH-2:0] flipped_quotient;
+	logic signed [BIT_WIDTH-1:0] signed_quotient;
 
 	assign alpha_k_num = $signed(mult_res[0]) - $signed(mult_res[1]);
 	assign beta_k_num = $signed(mult_res[4]) - $signed(mult_res[3]);
 	assign denom = $signed(mult_res[2]) - $signed(mult_res[3]);
-	
-	assign abs_denom = (denom[31]) ? denom : ~denom + 1;
+	// absolute value in two's complement
+	assign abs_denom = (denom[31]) ? ~denom + 1 : denom;
 
-	// combine quotient with sign_pipeline[18]
-	// assume quotient[31] is 0,
+	// truncate top bits of quotient
+	assign trunc_quotient = quotient[63:32];
+	// combine trunc_quotient with sign_pipeline[18]
+	// assume trunc_quotient[31] is 0 (IS THIS TRUE?),
 	// i.e. it's actually <= 31 bit unsigned integer, so flip as normal
-	assign flipped_quotient = ~quotient[30:0] + 1; // need to split into two steps bc cocotb
-	assign signed_quotient = (sign_pipeline[18]) ? $signed({1'b1, flipped_quotient}) : $signed({1'b0, quotient[30:0]});
+	assign flipped_quotient = ~trunc_quotient + 1; // need to split into two steps bc cocotb
+	assign signed_quotient = (sign_pipeline[18]) ? $signed(flipped_quotient) : $signed(trunc_quotient);
 
 	always_ff @(posedge clk_in) begin
 		if (rst_in) begin
@@ -219,7 +221,7 @@ module emin #(
 							pipeline[stage][5] <= beta_k_num;
 							sign_pipeline[stage] <= denom[31];
 							valid_pipeline[stage] <= valid_pipeline[stage-1];
-							divisor <= (abs_denom) ? abs_denom : 1; // avoid problem with 1
+							divisor <= (abs_denom) ? {32'b0, abs_denom} : 64'b1; // avoid problem with 1
 						end else begin
 							// stage == 19, form alpha_k, beta_k
 							pipeline[stage][0] <= pipeline[stage-1][0];
