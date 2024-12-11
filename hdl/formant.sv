@@ -24,7 +24,7 @@ module formant #(
 	logic [BIT_WIDTH-1:0] T_input_data [0:NU_VALUES-1];
 	logic T_input_data_valid;
 	logic [I_WIDTH-1:0] T_read_address;
-	logic [BIT_WIDTH-1:0] T_output_data [0:NU_VALUES-1]; //Testing the read values here... to be non-zero.
+	logic [0:NU_VALUES-1] [BIT_WIDTH-1:0] T_output_data ; //Testing the read values here... to be non-zero.
 
 	// Emin BRAM is the loss of having a segment (addr,f) for each f
 	// We could use a rolling buffer, but currently we are calculating all of Emin(x, i), then calculate all of F(k, i)
@@ -187,7 +187,7 @@ module formant #(
 	// phi functions
 	logic phi_input_valid;
 	logic phi_input_start;
-	logic [BIT_WIDTH-1:0] phi_output [0:FORMANTS-1];
+	logic [0:FORMANTS-1] [BIT_WIDTH-1:0] phi_output;
 	logic phi_output_valid;
 	
 	// buffer time
@@ -256,7 +256,7 @@ module formant #(
 							segment <= FORMANTS;
 							segment_values[FORMANTS] <= I - 1;
 							delay <= 2'b10;
-							B_read_address <= segment_values[FORMANTS];
+							B_read_address <= I-1;
 						end
 					end
 				end
@@ -275,10 +275,12 @@ module formant #(
 						end
 					end else begin
 						state <= PHI_CALC;
-						delay <= 1'b1;
-						segment_T_read_address <= segment_values[1];
+						delay <= 2'b10;
+						phi_T_read_address <= segment_values[1];
+						// changed to not try and read the invalid -1 value.
 						segment <= 1;
 						phi_input_start <= 1'b1;
+						phi_input_valid <= 1'b0;
 					end
 				end
 				PHI_CALC: begin
@@ -286,14 +288,14 @@ module formant #(
 					// don't do any fancy stuff
 					state_tracker <= 3'b101;
 					phi_input_start <= 1'b0;
-					if (segment < FORMANTS) begin
+					if (segment <= FORMANTS) begin
 						if (delay) begin
 							delay <= delay - 1;
 							phi_input_valid <= 1'b0;
 						end else begin
-							delay <= 1'b1;
+							delay <= 2'b10;
 							phi_input_valid <= 1'b1;
-							phi_T_read_address <= segment_values[segment+1];
+							phi_T_read_address <= segment_values[(segment == FORMANTS) ? segment : segment+1];
 							segment <= segment + 1;
 						end
 					end else if (phi_output_valid) begin
@@ -394,6 +396,8 @@ module formant #(
 	assign F_write_address = current_i;
 	assign B_write_address = current_i;
 
+	logic [BIT_WIDTH-1:0] debug_to_acos;
+
 	phi #(
 		.BIT_WIDTH(BIT_WIDTH),
 		.I(I),
@@ -406,6 +410,7 @@ module formant #(
 		.T_vals(T_output_data),
 		.input_start(phi_input_start),
 		.input_valid(phi_input_valid),
+		.debug_to_acos(debug_to_acos),
 		.output_data(phi_output),
 		.output_valid(phi_output_valid)
 	);

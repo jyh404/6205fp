@@ -273,8 +273,8 @@ module top_level
 		reordering_counter_buffer[0] <= reordering_counter_buffer[1];
 		//This gives a choice of output
 		//Top: log/8, Bottom: Top 8 bits.
-		// reordered_flipflops[reordering_counter_buffer[0]] <= f_output_data_log;
-		reordered_flipflops[reordering_counter_buffer[1]] <= f_output_data[31:24];
+		reordered_flipflops[reordering_counter_buffer[0]] <= f_output_data_log;
+		// reordered_flipflops[reordering_counter_buffer[1]] <= f_output_data[31:24];
 		// i am sneaking the uart packet here... oops
 	end
 

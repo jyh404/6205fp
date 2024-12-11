@@ -40,34 +40,41 @@ module T #(
 	//1 clock cycle
 	CosineLookup for_multiply(
 		.clock(clk_in),
+		.addr0(9'b0),
 		.addr1(counter_indx),
 		.addr2(counter_indx<<1),
+		.res0(cosine_value[0]),
 		.res1(cosine_value[1]),
 		.res2(cosine_value[2])
 	);
 	
-	logic [2*BIT_WIDTH-1:0] temp_partial_0;
-	assign temp_partial_0 = (fft_data_buffer*(32'h00cccccc<<SCALE));
-
+	logic [BIT_WIDTH-1:0] temp_partial_0;
+	Multiply_re #(.WIDTH(BIT_WIDTH-8)) cos_mult_0(
+		.a_re(fft_data_buffer[BIT_WIDTH-1:8]),
+		.b_re(cosine_value[0][BIT_WIDTH-1-SCALE:8-SCALE]),
+		.m_re(temp_partial_0[BIT_WIDTH-1:8])
+	);
+	assign temp_partial_0[7:0] = 0;
+	
 	//1 clock cycle for time safety.
 	logic [BIT_WIDTH-1:0] temp_partial_1;
 	Multiply_re #(.WIDTH(BIT_WIDTH-8)) cos_mult_1(
-		.a_re(fft_data_buffer[BIT_WIDTH-1-SCALE:8-SCALE]),
-		.b_re(cosine_value[1][BIT_WIDTH-1:8]),
+		.a_re(fft_data_buffer[BIT_WIDTH-1:8]),
+		.b_re(cosine_value[1][BIT_WIDTH-1-SCALE:8-SCALE]),
 		.m_re(temp_partial_1[BIT_WIDTH-1:8])
 	);
 	assign temp_partial_1[7:0] = 0;
 	
 	logic [BIT_WIDTH-1:0] temp_partial_2;
 	Multiply_re #(.WIDTH(BIT_WIDTH)) cos_mult_2(
-		.a_re(fft_data_buffer[BIT_WIDTH-1-SCALE:8-SCALE]),
-		.b_re(cosine_value[2][BIT_WIDTH-1:8]),
+		.a_re(fft_data_buffer[BIT_WIDTH-1:8]),
+		.b_re(cosine_value[2][BIT_WIDTH-1-SCALE:8-SCALE]),
 		.m_re(temp_partial_2[BIT_WIDTH-1:8])
 	);
 	assign temp_partial_2[7:0] = 0;
 	
 	always_ff @(posedge clk_in) begin
-		partial_sums[0] <= temp_partial_0[62:31];
+		partial_sums[0] <= temp_partial_0;
 		partial_sums[1] <= temp_partial_1;
 		partial_sums[2] <= temp_partial_2;
 		fft_valid_buffer[0] <= fft_valid;

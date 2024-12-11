@@ -9,10 +9,11 @@ module phi #(
 	parameter MAX_FREQ = 5000
 ) ( input wire clk_in,
 	input wire rst_in,
-    input wire [BIT_WIDTH-1:0] T_vals [0:NU_VALUES-1],
+    input wire [0:NU_VALUES-1] [BIT_WIDTH-1:0] T_vals ,
     input wire input_start,
     input wire input_valid,
-    output logic [BIT_WIDTH-1:0] output_data [0:FORMANTS-1],
+	output logic [BIT_WIDTH-1:0] debug_to_acos,
+    output logic [0:FORMANTS-1] [BIT_WIDTH-1:0] output_data ,
     output logic output_valid
 );
     // assumes that segments have been calculated already
@@ -22,6 +23,9 @@ module phi #(
     // we save these T_vals locally
     // then do math with local values and output all phi values at once
 	// ok gottit thanks jonathan
+
+	
+	
 	logic [BIT_WIDTH-1:0] T_vals_storage [0:NU_VALUES-1] [0:FORMANTS-1];
 	logic flare_seen;
 	logic [$clog2(FORMANTS)-1:0] T_vals_seen = 0;
@@ -287,6 +291,7 @@ module phi #(
 				//and 31 MSB of the output.
 			end
 			85: begin
+				debug_to_acos <= to_acos;
 				output_data[formant_index-1] <= {acos_data,8'b0};
 			end
 			86: begin
