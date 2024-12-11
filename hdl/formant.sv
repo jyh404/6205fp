@@ -182,7 +182,7 @@ module formant #(
 	// for traceback
 	logic [I_WIDTH-1:0] segment_values [0:FORMANTS];
 	logic [$clog2(FORMANTS)-1:0] segment;
-	logic delay;
+	logic [1:0] delay;
 
 	// phi functions
 	logic phi_input_valid;
@@ -255,7 +255,7 @@ module formant #(
 							state <= SEGMENT_CALC;
 							segment <= FORMANTS;
 							segment_values[FORMANTS] <= I - 1;
-							delay <= 1'b1;
+							delay <= 2'b10;
 							B_read_address <= segment_values[FORMANTS];
 						end
 					end
@@ -266,7 +266,7 @@ module formant #(
 						if (delay) begin
 							delay <= delay - 1;
 						end else begin
-							delay <= 1'b1;
+							delay <= 2'b10;
 							segment_values[segment-1] <= B_output_data[segment-1];
 							if (segment > 1) begin
 								B_read_address <= B_output_data[segment-1];
@@ -290,7 +290,7 @@ module formant #(
 							delay <= delay - 1;
 							phi_input_valid <= 1'b0;
 						end else begin
-							delay <= 1'b1;
+							delay <= 2'b10;
 							phi_input_valid <= 1'b1;
 							phi_T_read_address <= segment_values[segment+1];
 							segment <= segment + 1;
