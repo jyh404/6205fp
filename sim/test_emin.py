@@ -39,9 +39,9 @@ async def test_a(dut):
         if (dut.T_req.value.is_resolvable):
             T_BRAM_queue.append(
                 [
-                    tobit32(dut.T_req.value.integer * 2 * (1<<16)),
-                    tobit32(dut.T_req.value.integer * 1 * (1<<16)),
-                    tobit32(dut.T_req.value.integer * 0 * (1<<16))
+                    tobit32(dut.T_req.value.integer * 2 * (1<<20)),
+                    tobit32(dut.T_req.value.integer * 1 * (1<<20)),
+                    tobit32(dut.T_req.value.integer * 0 * (1<<20))
                 ]
             )
         else:
@@ -52,7 +52,9 @@ async def test_a(dut):
                     tobit32(0)
                 ]
             )
-        dut.T_resp.value = T_BRAM_queue[0]
+        dut.T_resp0.value = T_BRAM_queue[0][0]
+        dut.T_resp1.value = T_BRAM_queue[0][1]
+        dut.T_resp2.value = T_BRAM_queue[0][2]
         T_BRAM_queue.pop(0)
         # honestly just look at waveform
         await ClockCycles(dut.clk_in, 1)

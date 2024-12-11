@@ -29,6 +29,7 @@ module emin #(
 	poss_state state;
 	
 	logic signed [BIT_WIDTH-1:0] T_i [0:NU_VALUES-1];
+	// split up T_resp because iverilog
 	logic [BIT_WIDTH-1:0] T_resp [0:NU_VALUES-1];
 	assign T_resp[0] = T_resp0;
 	assign T_resp[1] = T_resp1;
@@ -114,10 +115,10 @@ module emin #(
 	logic signed [BIT_WIDTH-1:0] emin_val;
 
 	// for purposes of visualizing on gtkwave
-	///logic signed [BIT_WIDTH-1:0] afactor7;
-	//logic signed [BIT_WIDTH-1:0] afactor8;
-	//assign afactor7 = a_factor[7];
-	//assign afactor8 = a_factor[8];
+	logic signed [BIT_WIDTH-1:0] afactor0;
+	logic signed [BIT_WIDTH-1:0] bfactor0;
+	assign afactor0 = a_factor[0];
+	assign bfactor0 = b_factor[0];
 	logic signed [BIT_WIDTH-1:0] mult_res_0;
 	logic signed [BIT_WIDTH-1:0] mult_res_1;
 	logic signed [BIT_WIDTH-1:0] mult_res_2;
