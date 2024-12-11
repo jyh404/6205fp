@@ -491,230 +491,230 @@ module top_level
     .tx_wire_out(uart_txd)
     );
 
-	// IT IS TIME TO GRAPH OUR FORMANTS
-	// FBRAM = frame bram
+	// // IT IS TIME TO GRAPH OUR FORMANTS
+	// // FBRAM = frame bram
 
-	localparam FRAME_WIDTH = 1280;
-	localparam FRAME_HEIGHT = 720;
-	localparam DATA_LEN = 8;
-	localparam FBRAM_DEPTH = FRAME_WIDTH * FRAME_HEIGHT / DATA_LEN;
+	// localparam FRAME_WIDTH = 1280;
+	// localparam FRAME_HEIGHT = 720;
+	// localparam DATA_LEN = 8;
+	// localparam FBRAM_DEPTH = FRAME_WIDTH * FRAME_HEIGHT / DATA_LEN;
 
-	logic [DATA_LEN-1:0] formant_graph [0:FRAME_HEIGHT-1];
+	// logic [DATA_LEN-1:0] formant_graph [0:FRAME_HEIGHT-1];
 
-	logic [$clog2(FBRAM_DEPTH)-1:0] fbram_write_address;
-	logic [DATA_LEN-1:0] fbram_input_data;
-	logic fbram_input_data_valid;
+	// logic [$clog2(FBRAM_DEPTH)-1:0] fbram_write_address;
+	// logic [DATA_LEN-1:0] fbram_input_data;
+	// logic fbram_input_data_valid;
 
-	logic [$clog2(FBRAM_DEPTH)-1:0] fbram_read_address;
-	logic [DATA_LEN-1:0] fbram_output_data;
+	// logic [$clog2(FBRAM_DEPTH)-1:0] fbram_read_address;
+	// logic [DATA_LEN-1:0] fbram_output_data;
 
-	xilinx_true_dual_port_read_first_1_clock_ram #(
-		.RAM_WIDTH(DATA_LEN),
-		.RAM_DEPTH(FBRAM_DEPTH),
-		.RAM_PERFORMANCE("HIGH_PERFORMANCE")
-	) 
-	fbram
-	(
-		.clka(clk_100mhz),     // Clock
-		//writing port:
-		.addra(fbram_write_address),   // Port A address bus,
-		.dina(fbram_input_data),     // Port A RAM input data
-		.wea(fbram_input_data_valid),       // Port A write enable
-		//reading port:
-		.addrb(fbram_read_address),   // Port B address bus,
-		.doutb(fbram_output_data),    // Port B RAM output data,
-		.douta(),   // Port A RAM output data, width determined from RAM_WIDTH
-		.dinb(8'b0),     // Port B RAM input data, width determined from RAM_WIDTH
-		.web(1'b0),       // Port B write enable
-		.ena(1'b1),       // Port A RAM Enable
-		.enb(1'b1),       // Port B RAM Enable,
-		.rsta(1'b0),     // Port A output reset
-		.rstb(1'b0),     // Port B output reset
-		.regcea(1'b1), // Port A output register enable
-		.regceb(1'b1) // Port B output register enable
-	);
+	// xilinx_true_dual_port_read_first_1_clock_ram #(
+	// 	.RAM_WIDTH(DATA_LEN),
+	// 	.RAM_DEPTH(FBRAM_DEPTH),
+	// 	.RAM_PERFORMANCE("HIGH_PERFORMANCE")
+	// ) 
+	// fbram
+	// (
+	// 	.clka(clk_100mhz),     // Clock
+	// 	//writing port:
+	// 	.addra(fbram_write_address),   // Port A address bus,
+	// 	.dina(fbram_input_data),     // Port A RAM input data
+	// 	.wea(fbram_input_data_valid),       // Port A write enable
+	// 	//reading port:
+	// 	.addrb(fbram_read_address),   // Port B address bus,
+	// 	.doutb(fbram_output_data),    // Port B RAM output data,
+	// 	.douta(),   // Port A RAM output data, width determined from RAM_WIDTH
+	// 	.dinb(8'b0),     // Port B RAM input data, width determined from RAM_WIDTH
+	// 	.web(1'b0),       // Port B write enable
+	// 	.ena(1'b1),       // Port A RAM Enable
+	// 	.enb(1'b1),       // Port B RAM Enable,
+	// 	.rsta(1'b0),     // Port A output reset
+	// 	.rstb(1'b0),     // Port B output reset
+	// 	.regcea(1'b1), // Port A output register enable
+	// 	.regceb(1'b1) // Port B output register enable
+	// );
     
-    logic clk_pixel, clk_5x; //clock lines
-    logic locked; //locked signal (we'll leave unused but still hook it up)
+    // logic clk_pixel, clk_5x; //clock lines
+    // logic locked; //locked signal (we'll leave unused but still hook it up)
     
-    //clock manager...creates 74.25 Hz and 5 times 74.25 MHz for pixel and TMDS
-    hdmi_clk_wiz_720p mhdmicw (
-        .reset(0),
-        .locked(locked),
-        .clk_ref(clk_100mhz),
-        .clk_pixel(clk_pixel),
-        .clk_tmds(clk_5x)
-	);
+    // //clock manager...creates 74.25 Hz and 5 times 74.25 MHz for pixel and TMDS
+    // hdmi_clk_wiz_720p mhdmicw (
+    //     .reset(0),
+    //     .locked(locked),
+    //     .clk_ref(clk_100mhz),
+    //     .clk_pixel(clk_pixel),
+    //     .clk_tmds(clk_5x)
+	// );
     
-    logic [10:0] hcount; //hcount of system!
-    logic [9:0] vcount; //vcount of system!
-    logic hor_sync; //horizontal sync signal
-    logic vert_sync; //vertical sync signal
-    logic active_draw; //active draw! 1 when in drawing region, 0 in blanking/sync
-    logic new_frame; //one cycle active indicator of new frame of info!
-    logic [5:0] frame_count; // 0 to 59 then rollover frame counter
+    // logic [10:0] hcount; //hcount of system!
+    // logic [9:0] vcount; //vcount of system!
+    // logic hor_sync; //horizontal sync signal
+    // logic vert_sync; //vertical sync signal
+    // logic active_draw; //active draw! 1 when in drawing region, 0 in blanking/sync
+    // logic new_frame; //one cycle active indicator of new frame of info!
+    // logic [5:0] frame_count; // 0 to 59 then rollover frame counter
     
-    //written by you previously! (make sure you include in your hdl)
-    //default instantiation so making signals for 720p
-    video_sig_gen mvg(
-        .pixel_clk_in(clk_pixel),
-        .rst_in(sys_rst),
-        .hcount_out(hcount),
-        .vcount_out(vcount),
-        .vs_out(vert_sync),
-        .hs_out(hor_sync),
-        .ad_out(active_draw),
-        .nf_out(new_frame),
-        .fc_out(frame_count)
-	);
+    // //written by you previously! (make sure you include in your hdl)
+    // //default instantiation so making signals for 720p
+    // video_sig_gen mvg(
+    //     .pixel_clk_in(clk_pixel),
+    //     .rst_in(sys_rst),
+    //     .hcount_out(hcount),
+    //     .vcount_out(vcount),
+    //     .vs_out(vert_sync),
+    //     .hs_out(hor_sync),
+    //     .ad_out(active_draw),
+    //     .nf_out(new_frame),
+    //     .fc_out(frame_count)
+	// );
     
-    logic [7:0] red, green, blue; //red green and blue pixel values for output
-    logic [9:0] tmds_10b [2:0]; //output of each TMDS encoder!
-    logic tmds_signal [2:0]; //output of each TMDS serializer!
+    // logic [7:0] red, green, blue; //red green and blue pixel values for output
+    // logic [9:0] tmds_10b [2:0]; //output of each TMDS encoder!
+    // logic tmds_signal [2:0]; //output of each TMDS serializer!
 
-	typedef enum {WAIT_DRAW, DRAW, HBLANK, VBLANK} frame_state;
-	framestate state;
+	// typedef enum {WAIT_DRAW, DRAW, HBLANK, VBLANK} frame_state;
+	// framestate state;
 
-	logic [FRAME_WIDTH-1:0] row_data;
-	logic [$clog2(FRAME_WIDTH)-1:0] row_offset;
-	logic [$clog2(FRAME_WIDTH)-1:0] row_index;
-	logic [$clog2(FRAME_HEIGHT)-1:0] col_index;
-	logic [$clog2(FRAME_WIDTH)-1:0] row_index_pipeline [0:1];
+	// logic [FRAME_WIDTH-1:0] row_data;
+	// logic [$clog2(FRAME_WIDTH)-1:0] row_offset;
+	// logic [$clog2(FRAME_WIDTH)-1:0] row_index;
+	// logic [$clog2(FRAME_HEIGHT)-1:0] col_index;
+	// logic [$clog2(FRAME_WIDTH)-1:0] row_index_pipeline [0:1];
 
-	// for BRAM waiting
-	always_ff @(posedge clk_in) begin
-		row_index_pipeline[0] <= row_index;
-		row_index_pipeline[1] <= row_index_pipeline[0];
-	end
+	// // for BRAM waiting
+	// always_ff @(posedge clk_in) begin
+	// 	row_index_pipeline[0] <= row_index;
+	// 	row_index_pipeline[1] <= row_index_pipeline[0];
+	// end
 
-	// drawing row by row: just do white if on, black if off
-	always_comb begin
-		red = (row_data[hcount]) ? 8'hff : 8'h00;
-		green = (row_data[hcount]) ? 8'hff : 8'h00;
-		blue = (row_data[hcount]) ? 8'hff : 8'h00;
-	end
+	// // drawing row by row: just do white if on, black if off
+	// always_comb begin
+	// 	red = (row_data[hcount]) ? 8'hff : 8'h00;
+	// 	green = (row_data[hcount]) ? 8'hff : 8'h00;
+	// 	blue = (row_data[hcount]) ? 8'hff : 8'h00;
+	// end
 
-	always_ff @(posedge clk_in) begin
-		if (rst_in) begin
-			state <= DRAW;
-			row_offset <= 0;
-			fbram_read_address <= 0;
-		end else begin
-			case (state) 
-				WAIT_DRAW: begin
-					fbram_input_data_valid <= 1'b0;
-					if (hcount == 0) begin
-						state <= DRAW;
-					end
-				end
-				DRAW: begin
-					if (hcount == FRAME_WIDTH - 1) begin
-						state <= HBLANK;
-						row_index <= 0;
-						fbram_read_address <= (FRAME_WIDTH / DATA_LEN) * (vcount) + row_offset;
-					end
-				end
-				HBLANK: begin
-					if (row_index <= FRAME_WIDTH - DATA_LEN) begin
-						if (fbram_read_address == (FRAME_WIDTH / DATA_LEN) * (vcount + 1) - 1) begin
-							fbram_read_address <= (FRAME_WIDTH / DATA_LEN) * (vcount);
-						end else begin
-							fbram_read_address <= fbram_read_address + 1;
-						end
-						row_index <= row_index + DATA_LEN;
-					end
-					if (row_index_pipeline[1] <= FRAME_WIDTH - DATA_LEN) begin
-						row_data[row_index_pipeline[1]+DATA_LEN-1:row_index_pipeline[1]] <= fbram_output_data;
-						if (row_index_pipeline[1] == FRAME_WIDTH - DATA_LEN) begin
-							if (vcount < FRAME_HEIGHT - 1) begin
-								state <= WAIT_DRAW;
-							end else begin
-								state <= VBLANK;
-								col_index <= 0;
-							end
-						end
-					end
-				end
-				VBLANK: begin
-					// move formant_graphs data into bram
-					// when done, go to WAIT_DRAW
-					if (col_index < FRAME_HEIGHT) begin
-						fbram_write_address <= (FRAME_HEIGHT / DATA_LEN) * col_index + row_offset;
-						fbram_input_data <= formant_graph[col_index];
-						fbram_input_data_valid <= 1'b1;
-						col_index <= col_index + 1;
-					end else begin
-						state <= WAIT_DRAW;
-						fbram_input_data_valid <= 1'b0;
-						if (row_offset == (FRAME_HEIGHT / DATA_LEN) - 1) begin
-							row_offset <= 0;
-						end else begin
-							row_offset <= row_offset + 1;
-						end
-					end
-				end
-			endcase
-		end
-	end
+	// always_ff @(posedge clk_in) begin
+	// 	if (rst_in) begin
+	// 		state <= DRAW;
+	// 		row_offset <= 0;
+	// 		fbram_read_address <= 0;
+	// 	end else begin
+	// 		case (state) 
+	// 			WAIT_DRAW: begin
+	// 				fbram_input_data_valid <= 1'b0;
+	// 				if (hcount == 0) begin
+	// 					state <= DRAW;
+	// 				end
+	// 			end
+	// 			DRAW: begin
+	// 				if (hcount == FRAME_WIDTH - 1) begin
+	// 					state <= HBLANK;
+	// 					row_index <= 0;
+	// 					fbram_read_address <= (FRAME_WIDTH / DATA_LEN) * (vcount) + row_offset;
+	// 				end
+	// 			end
+	// 			HBLANK: begin
+	// 				if (row_index <= FRAME_WIDTH - DATA_LEN) begin
+	// 					if (fbram_read_address == (FRAME_WIDTH / DATA_LEN) * (vcount + 1) - 1) begin
+	// 						fbram_read_address <= (FRAME_WIDTH / DATA_LEN) * (vcount);
+	// 					end else begin
+	// 						fbram_read_address <= fbram_read_address + 1;
+	// 					end
+	// 					row_index <= row_index + DATA_LEN;
+	// 				end
+	// 				if (row_index_pipeline[1] <= FRAME_WIDTH - DATA_LEN) begin
+	// 					row_data[row_index_pipeline[1]+DATA_LEN-1:row_index_pipeline[1]] <= fbram_output_data;
+	// 					if (row_index_pipeline[1] == FRAME_WIDTH - DATA_LEN) begin
+	// 						if (vcount < FRAME_HEIGHT - 1) begin
+	// 							state <= WAIT_DRAW;
+	// 						end else begin
+	// 							state <= VBLANK;
+	// 							col_index <= 0;
+	// 						end
+	// 					end
+	// 				end
+	// 			end
+	// 			VBLANK: begin
+	// 				// move formant_graphs data into bram
+	// 				// when done, go to WAIT_DRAW
+	// 				if (col_index < FRAME_HEIGHT) begin
+	// 					fbram_write_address <= (FRAME_HEIGHT / DATA_LEN) * col_index + row_offset;
+	// 					fbram_input_data <= formant_graph[col_index];
+	// 					fbram_input_data_valid <= 1'b1;
+	// 					col_index <= col_index + 1;
+	// 				end else begin
+	// 					state <= WAIT_DRAW;
+	// 					fbram_input_data_valid <= 1'b0;
+	// 					if (row_offset == (FRAME_HEIGHT / DATA_LEN) - 1) begin
+	// 						row_offset <= 0;
+	// 					end else begin
+	// 						row_offset <= row_offset + 1;
+	// 					end
+	// 				end
+	// 			end
+	// 		endcase
+	// 	end
+	// end
     
-    //three tmds_encoders (blue, green, red)
+    // //three tmds_encoders (blue, green, red)
     
-    tmds_encoder tmds_red(
-        .clk_in(clk_pixel),
-        .rst_in(sys_rst),
-        .data_in(red),
-        .control_in(2'b0),
-        .ve_in(active_draw),
-        .tmds_out(tmds_10b[2]));
+    // tmds_encoder tmds_red(
+    //     .clk_in(clk_pixel),
+    //     .rst_in(sys_rst),
+    //     .data_in(red),
+    //     .control_in(2'b0),
+    //     .ve_in(active_draw),
+    //     .tmds_out(tmds_10b[2]));
 
-    tmds_encoder tmds_green(
-        .clk_in(clk_pixel),
-        .rst_in(sys_rst),
-        .data_in(green),
-        .control_in(2'b0),
-        .ve_in(active_draw),
-        .tmds_out(tmds_10b[1]));
+    // tmds_encoder tmds_green(
+    //     .clk_in(clk_pixel),
+    //     .rst_in(sys_rst),
+    //     .data_in(green),
+    //     .control_in(2'b0),
+    //     .ve_in(active_draw),
+    //     .tmds_out(tmds_10b[1]));
 
-    tmds_encoder tmds_blue(
-        .clk_in(clk_pixel),
-        .rst_in(sys_rst),
-        .data_in(blue),
-        .control_in({vert_sync, hor_sync}),
-        .ve_in(active_draw),
-        .tmds_out(tmds_10b[0]));
+    // tmds_encoder tmds_blue(
+    //     .clk_in(clk_pixel),
+    //     .rst_in(sys_rst),
+    //     .data_in(blue),
+    //     .control_in({vert_sync, hor_sync}),
+    //     .ve_in(active_draw),
+    //     .tmds_out(tmds_10b[0]));
     
-    //three tmds_serializers (blue, green, red):
-    tmds_serializer red_ser(
-        .clk_pixel_in(clk_pixel),
-        .clk_5x_in(clk_5x),
-        .rst_in(sys_rst),
-        .tmds_in(tmds_10b[2]),
-        .tmds_out(tmds_signal[2]));
+    // //three tmds_serializers (blue, green, red):
+    // tmds_serializer red_ser(
+    //     .clk_pixel_in(clk_pixel),
+    //     .clk_5x_in(clk_5x),
+    //     .rst_in(sys_rst),
+    //     .tmds_in(tmds_10b[2]),
+    //     .tmds_out(tmds_signal[2]));
 
-    tmds_serializer green_ser(
-        .clk_pixel_in(clk_pixel),
-        .clk_5x_in(clk_5x),
-        .rst_in(sys_rst),
-        .tmds_in(tmds_10b[1]),
-        .tmds_out(tmds_signal[1]));
+    // tmds_serializer green_ser(
+    //     .clk_pixel_in(clk_pixel),
+    //     .clk_5x_in(clk_5x),
+    //     .rst_in(sys_rst),
+    //     .tmds_in(tmds_10b[1]),
+    //     .tmds_out(tmds_signal[1]));
 
-    tmds_serializer blue_ser(
-        .clk_pixel_in(clk_pixel),
-        .clk_5x_in(clk_5x),
-        .rst_in(sys_rst),
-        .tmds_in(tmds_10b[0]),
-        .tmds_out(tmds_signal[0]));
+    // tmds_serializer blue_ser(
+    //     .clk_pixel_in(clk_pixel),
+    //     .clk_5x_in(clk_5x),
+    //     .rst_in(sys_rst),
+    //     .tmds_in(tmds_10b[0]),
+    //     .tmds_out(tmds_signal[0]));
     
-    //output buffers generating differential signals:
-    //three for the r,g,b signals and one that is at the pixel clock rate
-    //the HDMI receivers use recover logic coupled with the control signals asserted
-    //during blanking and sync periods to synchronize their faster bit clocks off
-    //of the slower pixel clock (so they can recover a clock of about 742.5 MHz from
-    //the slower 74.25 MHz clock)
-    OBUFDS OBUFDS_blue (.I(tmds_signal[0]), .O(hdmi_tx_p[0]), .OB(hdmi_tx_n[0]));
-    OBUFDS OBUFDS_green(.I(tmds_signal[1]), .O(hdmi_tx_p[1]), .OB(hdmi_tx_n[1]));
-    OBUFDS OBUFDS_red  (.I(tmds_signal[2]), .O(hdmi_tx_p[2]), .OB(hdmi_tx_n[2]));
-    OBUFDS OBUFDS_clock(.I(clk_pixel), .O(hdmi_clk_p), .OB(hdmi_clk_n));
+    // //output buffers generating differential signals:
+    // //three for the r,g,b signals and one that is at the pixel clock rate
+    // //the HDMI receivers use recover logic coupled with the control signals asserted
+    // //during blanking and sync periods to synchronize their faster bit clocks off
+    // //of the slower pixel clock (so they can recover a clock of about 742.5 MHz from
+    // //the slower 74.25 MHz clock)
+    // OBUFDS OBUFDS_blue (.I(tmds_signal[0]), .O(hdmi_tx_p[0]), .OB(hdmi_tx_n[0]));
+    // OBUFDS OBUFDS_green(.I(tmds_signal[1]), .O(hdmi_tx_p[1]), .OB(hdmi_tx_n[1]));
+    // OBUFDS OBUFDS_red  (.I(tmds_signal[2]), .O(hdmi_tx_p[2]), .OB(hdmi_tx_n[2]));
+    // OBUFDS OBUFDS_clock(.I(clk_pixel), .O(hdmi_clk_p), .OB(hdmi_clk_n));
 
 endmodule // top_level
 

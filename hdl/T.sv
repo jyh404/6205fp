@@ -7,9 +7,9 @@ module T #(
 	input wire rst_in,
 	input wire fft_valid, //valid for 160 cycles
 	input wire [BIT_WIDTH-1:0] fft_data, //take the 160 cycles where its valid
-    output logic [BIT_WIDTH-1:0] output_written_0,
-    output logic [BIT_WIDTH-1:0] output_written_1,
-    output logic [BIT_WIDTH-1:0] output_written_2,
+    output logic signed [BIT_WIDTH-1:0] output_written_0,
+    output logic signed [BIT_WIDTH-1:0] output_written_1,
+    output logic signed [BIT_WIDTH-1:0] output_written_2,
 	output logic output_valid,
 	output logic [$clog2(I)-1:0] output_address
 );
@@ -18,14 +18,22 @@ module T #(
 
 	localparam SCALE = 4; //we divide by 4 here to not overflow.
 
-	logic [BIT_WIDTH-1:0] running_sums [0:NU_VALUES-1]; //running total
-	logic [BIT_WIDTH-1:0] partial_sums [0:NU_VALUES-1]; //the thing(s) to add to the running total
-	logic [BIT_WIDTH-1:0] cosine_value [0:NU_VALUES-1]; //the cosine value to multiply to fft_data
+	logic signed [BIT_WIDTH-1:0] running_sums [0:NU_VALUES-1]; //running total
+	logic signed [BIT_WIDTH-1:0] partial_sums [0:NU_VALUES-1]; //the thing(s) to add to the running total
+	logic signed [BIT_WIDTH-1:0] cosine_value [0:NU_VALUES-1]; //the cosine value to multiply to fft_data
 	logic [8:0] counter_indx; //the tracker of which value we are on (next)
 	logic [8:0] counter_indx_buffer [0:1];
 	logic [BIT_WIDTH-1:0] fft_data_buffer; //for reasons.
 	logic fft_valid_buffer [0:1];
 	//assign cosine_value[0] = 1<<(BIT_WIDTH-8);
+
+	// for gtkwave visual
+	logic signed [BIT_WIDTH-1:0] cosine_value_0;
+	logic signed [BIT_WIDTH-1:0] cosine_value_1;
+	logic signed [BIT_WIDTH-1:0] cosine_value_2;
+	assign cosine_value_0 = cosine_value[0];
+	assign cosine_value_1 = cosine_value[1];
+	assign cosine_value_2 = cosine_value[2];
 	
 	//Counter and buffers
 	always_ff @(posedge clk_in) begin
@@ -48,7 +56,7 @@ module T #(
 		.res2(cosine_value[2])
 	);
 	
-	logic [BIT_WIDTH-1:0] temp_partial_0;
+	logic signed [BIT_WIDTH-1:0] temp_partial_0;
 	Multiply_re #(.WIDTH(BIT_WIDTH-8)) cos_mult_0(
 		.a_re(fft_data_buffer[BIT_WIDTH-1:8]),
 		.b_re(cosine_value[0][BIT_WIDTH-1-SCALE:8-SCALE]),
@@ -57,7 +65,7 @@ module T #(
 	assign temp_partial_0[7:0] = 0;
 	
 	//1 clock cycle for time safety.
-	logic [BIT_WIDTH-1:0] temp_partial_1;
+	logic signed [BIT_WIDTH-1:0] temp_partial_1;
 	Multiply_re #(.WIDTH(BIT_WIDTH-8)) cos_mult_1(
 		.a_re(fft_data_buffer[BIT_WIDTH-1:8]),
 		.b_re(cosine_value[1][BIT_WIDTH-1-SCALE:8-SCALE]),
@@ -65,8 +73,8 @@ module T #(
 	);
 	assign temp_partial_1[7:0] = 0;
 	
-	logic [BIT_WIDTH-1:0] temp_partial_2;
-	Multiply_re #(.WIDTH(BIT_WIDTH)) cos_mult_2(
+	logic signed [BIT_WIDTH-1:0] temp_partial_2;
+	Multiply_re #(.WIDTH(BIT_WIDTH-8)) cos_mult_2(
 		.a_re(fft_data_buffer[BIT_WIDTH-1:8]),
 		.b_re(cosine_value[2][BIT_WIDTH-1-SCALE:8-SCALE]),
 		.m_re(temp_partial_2[BIT_WIDTH-1:8])
