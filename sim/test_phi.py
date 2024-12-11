@@ -54,7 +54,7 @@ async def test_a(dut):
     await ClockCycles(dut.clk_in,83) #to align the clock cycle in sim
     dut._log.info(" All seen: "+str(dut.all_seen.value))
     dut._log.info(" Cycle count: "+str(dut.cycle_count.value))
-    await ClockCycles(dut.clk_in,240)
+    await ClockCycles(dut.clk_in,400)
     for i in range(100):
         dut._log.info(" Formant index: "+str(dut.formant_index.value))
         #dut._log.info(" All seen: "+str(dut.all_seen.value))

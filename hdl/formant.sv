@@ -202,6 +202,7 @@ module formant #(
 			case (state)
 				START: begin
 					current_i <= 0;
+					formant_valid <= 0;
 					if (fft_valid) begin
 						// FFT data is starting to arrive
 						state <= T_CALC;

@@ -59,7 +59,7 @@ module phi #(
 	// this is to be space efficient.
 	// because it is a small time constant.
 	
-	parameter CYCLES_PER_PHI = 60;
+	parameter CYCLES_PER_PHI = 100;
 	logic [$clog2(CYCLES_PER_PHI)-1:0] cycle_count = 0;
 	logic [$clog2(FORMANTS+1)-1:0] formant_index = 0;
 	
@@ -279,20 +279,20 @@ module phi #(
 	
 	always_ff @(posedge clk_in) begin
 		case(cycle_count)
-			50: begin
+			82: begin
 				to_acos <= (division_sign == 1'b1) ? 
 					-$signed({1'b0,quotient[BIT_WIDTH-1:1]}) : 
 					{1'b0,quotient[BIT_WIDTH-1:1]};
 				//this takes the sign (if it exceeds one whatever is good)
 				//and 31 MSB of the output.
 			end
-			53: begin
+			85: begin
 				output_data[formant_index-1] <= {acos_data,8'b0};
 			end
-			54: begin
+			86: begin
 				output_valid <= (formant_index == FORMANTS) ? 1 : 0;
 			end
-			55: begin
+			87: begin
 				output_valid <= 0;
 			end
 		endcase
