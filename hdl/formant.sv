@@ -24,7 +24,6 @@ module formant #(
 	logic [BIT_WIDTH-1:0] T_input_data [0:NU_VALUES-1];
 	logic T_input_data_valid;
 	logic [I_WIDTH-1:0] T_read_address;
-	logic [I_WIDTH-1:0] proposed_T_read_address; //for emin to get stuff.
 	logic [BIT_WIDTH-1:0] T_output_data [0:NU_VALUES-1]; //Testing the read values here... to be non-zero.
 
 	// Emin BRAM is the loss of having a segment (addr,f) for each f
@@ -193,6 +192,18 @@ module formant #(
 	
 	// buffer time
 	logic [2:0] state_tracker;
+	
+	
+	//fixing timing for T_read_address
+	logic [I_WIDTH-1:0] emin_T_read_address, segment_T_read_address, phi_T_read_address;	
+
+	always_comb begin
+		case(state)
+			default: T_read_address = emin_T_read_address;
+			SEGMENT_CALC: T_read_address = segment_T_read_address;
+			PHI_CALC: T_read_address = phi_T_read_address;
+		endcase
+	end
 
 	always_ff @(posedge clk_in) begin
 		if (rst_in) begin
@@ -225,7 +236,7 @@ module formant #(
 				EMIN_CALC: begin
 					emin_input_valid <= 1'b0;
 					state_tracker <= 3'b010;
-					T_read_address <= proposed_T_read_address;
+					//T_read_address <= emin_T_read_address;
 					if ((E_write_address == 0) && E_input_data_valid) begin
 						// we have written the last Emin value
 						state <= F_CALC;
@@ -264,7 +275,7 @@ module formant #(
 					end else begin
 						state <= PHI_CALC;
 						delay <= 1'b1;
-						T_read_address <= segment_values[1];
+						segment_T_read_address <= segment_values[1];
 						segment <= 1;
 						phi_input_start <= 1'b1;
 					end
@@ -280,7 +291,7 @@ module formant #(
 						end else begin
 							delay <= 1'b1;
 							phi_input_valid <= 1'b1;
-							T_read_address <= segment_values[segment+1];
+							phi_T_read_address <= segment_values[segment+1];
 							segment <= segment + 1;
 						end
 					end else if (phi_output_valid) begin
@@ -327,7 +338,7 @@ module formant #(
 		.T_resp0(T_output_data[0]),
 		.T_resp1(T_output_data[1]),
 		.T_resp2(T_output_data[2]),
-		.T_req(proposed_T_read_address),
+		.T_req(emin_T_read_address),
 		.j_out(E_write_address),
 		.data_out(E_input_data),
 		.output_valid(E_input_data_valid)
