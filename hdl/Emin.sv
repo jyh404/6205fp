@@ -38,15 +38,17 @@ module emin #(
 	logic [$clog2(I)-1:0] j_reg;
 	logic [1:0] delay;
 
-	parameter NUM_STAGES = 68;
+	parameter NUM_STAGES = 69;
 	logic signed [BIT_WIDTH-1:0] pipeline [0:NUM_STAGES-1][0:3];
 	logic sign_pipeline[0:NUM_STAGES-1][0:2];
 	// 0: 0 = j
 	// 1:
 	// 2: 1 = r(0, j-1, i), 2 = r(1, j-1, i), 3 = r(2, j-1, i)
-	// 3: (alpha_k_num/denom), (beta_k_num/denom) sent to dividers
+	// 3: compute alpha_k_num, beta_k_num, denom
+	// 4: make alpha_k_num, beta_k_num, denom unsigned, send to dividers
+	//	  (alpha_k_num/denom), (beta_k_num/denom) sent to dividers
 	//	  divider is unsigned, so need to save signs in pipeline
-	// 67: dividers done, write E_min to output
+	// 68: dividers done, write E_min to output
 	
 	logic valid_pipeline [0:NUM_STAGES-1];
 	// keep track of when pipeline is still calculating
@@ -97,11 +99,11 @@ module emin #(
 	logic signed [BIT_WIDTH-1:0] b_factor [0:NUM_MULTS-1];
 	logic signed [BIT_WIDTH-1:0] mult_res [0:NUM_MULTS-1];
 
-	logic signed [BIT_WIDTH-1:0] alpha_k_num;
-	logic signed [BIT_WIDTH-1:0] beta_k_num;
+	logic signed [BIT_WIDTH-1:0] alpha_k_num [0:1];
+	logic signed [BIT_WIDTH-1:0] beta_k_num [0:1];
 	logic signed [BIT_WIDTH-1:0] abs_alpha_k_num;
 	logic signed [BIT_WIDTH-1:0] abs_beta_k_num;
-	logic signed [BIT_WIDTH-1:0] denom;
+	logic signed [BIT_WIDTH-1:0] denom[0:1];
 	logic signed [BIT_WIDTH-1:0] abs_alpha_k;
 	logic signed [BIT_WIDTH-1:0] abs_beta_k;
 	logic signed [BIT_WIDTH-1:0] alpha_k;
@@ -151,8 +153,8 @@ module emin #(
 	assign a_factor[2] = pipeline[2][1];
 	assign a_factor[3] = pipeline[2][2];
 	assign a_factor[4] = pipeline[2][1];
-	assign a_factor[5] = pipeline[67][2];
-	assign a_factor[6] = pipeline[67][3];
+	assign a_factor[5] = pipeline[68][2];
+	assign a_factor[6] = pipeline[68][3];
 	
 	assign b_factor[0] = pipeline[2][2];
 	assign b_factor[1] = pipeline[2][3];
@@ -167,23 +169,32 @@ module emin #(
 	// so we shift num by 32 for more precision, then submit to divider
 	// then we expect only bottom 33 bits to be useful, we take the highest amount
 	// we are also guaranteed denom is positive: r(0) is largest in absolute value compared to r(1), r(2)
+
+	// we add another stage to the pipeline here since timing constraints
 	
-	assign alpha_k_num = $signed(mult_res[0]) - $signed(mult_res[1]);
-	assign beta_k_num = $signed(mult_res[4]) - $signed(mult_res[3]);
-	assign abs_alpha_k_num = (alpha_k_num[31]) ? $signed(-alpha_k_num) : alpha_k_num;
-	assign abs_beta_k_num = (beta_k_num[31]) ? $signed(-beta_k_num) : beta_k_num;
+	assign alpha_k_num[0] = $signed(mult_res[0]) - $signed(mult_res[1]);
+	assign beta_k_num[0] = $signed(mult_res[4]) - $signed(mult_res[3]);
+	assign denom[0] = $signed(mult_res[2]) - $signed(mult_res[3]);
+
+	always_ff @(posedge clk_in) begin
+		alpha_k_num[1] <= alpha_k_num[0];
+		beta_k_num[1] <= beta_k_num[0];
+		denom[1] <= denom[0];
+	end
+
+	assign abs_alpha_k_num = (alpha_k_num[1][31]) ? $signed(-$signed(alpha_k_num[1])) : $signed(alpha_k_num[1]);
+	assign abs_beta_k_num = (beta_k_num[1][31]) ? $signed(-$signed(beta_k_num[1])) : $signed(beta_k_num[1]);
 	assign dividend_a = {1'b0, abs_alpha_k_num[30:0], 32'b0};
 	assign dividend_b = {1'b0, abs_beta_k_num[30:0], 32'b0};
-	assign denom = $signed(mult_res[2]) - $signed(mult_res[3]);
-	assign divisor = (denom) ? {32'b0, denom} : 64'b1;
+	assign divisor = (denom[1]) ? {32'b0, denom[1]} : 64'b1;
 
 	// now we calculate emin_val
 	// we need to be careful to not overflow on the arithmetic 
 	assign abs_alpha_k = $signed({1'b0, quotient_a[32:2]});
 	assign abs_beta_k = $signed({1'b0, quotient_b[32:2]}); 
-	assign alpha_k = (sign_pipeline[67][0]) ? $signed(-abs_alpha_k) : $signed(abs_alpha_k);
-	assign beta_k = (sign_pipeline[67][1]) ? $signed(-abs_beta_k) : $signed(abs_beta_k);
-	assign emin_val = ($signed(pipeline[67][1]) >>> 2) - $signed(mult_res[5]) - $signed(mult_res[6]);
+	assign alpha_k = (sign_pipeline[68][0]) ? $signed(-abs_alpha_k) : $signed(abs_alpha_k);
+	assign beta_k = (sign_pipeline[68][1]) ? $signed(-abs_beta_k) : $signed(abs_beta_k);
+	assign emin_val = ($signed(pipeline[68][1]) >>> 2) - $signed(mult_res[5]) - $signed(mult_res[6]);
 	
 	always_ff @(posedge clk_in) begin
 		if (rst_in) begin
@@ -260,8 +271,8 @@ module emin #(
 							pipeline[stage][1] <= pipeline[stage-1][1];
 							pipeline[stage][2] <= pipeline[stage-1][2];
 							pipeline[stage][3] <= pipeline[stage-1][3];
-							sign_pipeline[stage][0] <= alpha_k_num[31];
-							sign_pipeline[stage][1] <= beta_k_num[31];
+							sign_pipeline[stage][0] <= alpha_k_num[0][31];
+							sign_pipeline[stage][1] <= beta_k_num[0][31];
 							valid_pipeline[stage] <= valid_pipeline[stage-1];
 						end
 					end
