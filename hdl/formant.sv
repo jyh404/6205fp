@@ -320,7 +320,8 @@ module formant #(
 
 	// need to pipeline k_req to make sure we pass the correct
 	// F(k-1,j) that was requested two cycles ago
-	logic [$clog2(FORMANTS)-1:0] k_req [0:2];
+	logic [$clog2(FORMANTS)-1:0] k_req [0:1];
+	logic [$clog2(FORMANTS)-1:0] k_req_begin;
 	logic [I_WIDTH-1:0] j_req;
 	logic [$clog2(FORMANTS)-1:0] k_write;
 	logic f_output_valid;
@@ -338,8 +339,8 @@ module formant #(
 		.begin_iter(f_begin_iter),
 		.i(current_i),
 		.e_prev(E_output_data),
-		.f_prev(F_output_data[k_req[2]-1]),
-		.k_req(k_req[0]),
+		.f_prev(F_output_data[k_req[1]-1]),
+		.k_req(k_req_begin),
 		.j_req(j_req),
 		.k_write(k_write),
 		.f_data(F_input_data),
@@ -349,8 +350,8 @@ module formant #(
 	);
 
 	always_ff @(posedge clk_in) begin
+		k_req[0] <= k_req_begin;
 		k_req[1] <= k_req[0];
-		k_req[2] <= k_req[1];
 	end
 
 	assign F_read_address = j_req; // can request from all F BRAMs at once

@@ -250,7 +250,6 @@ module top_level
 			reordering_counter <= reordering_counter + 1;
 		end
 	end
-	
 
 	
 	//This is used to output things in the log 'cause thats fun and all
