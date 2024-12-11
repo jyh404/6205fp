@@ -296,7 +296,9 @@ module formant #(
 		.rst_in(rst_in),
 		.fft_valid(fft_valid),
 		.fft_data(fft_data),
-		.output_written(T_input_data),
+		.output_written_0(T_input_data[0]),
+		.output_written_1(T_input_data[1]),
+		.output_written_2(T_input_data[2]),
 		.output_valid(T_input_data_valid),
 		.output_address(T_write_address)
 	);

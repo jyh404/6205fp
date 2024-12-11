@@ -2,7 +2,7 @@
 //  Multiply: Complex Multiplier
 //  Modified to only take real inputs and give real outputs.
 //----------------------------------------------------------------------
-module Multiply_re #(
+module Multiply_re_extra_shift #(
     parameter   WIDTH = 16
 )(
     input   signed  [WIDTH-1:0] a_re,
@@ -17,7 +17,7 @@ wire signed [WIDTH-1:0]     sc_arbr, sc_aibr;
 assign  arbr = a_re * b_re;
 
 //  Scaling
-assign  sc_arbr = arbr >>> (WIDTH-1);
+assign  sc_arbr = arbr >>> WIDTH;
 
 //  Sub/Add
 //  These sub/add may overflow if unnormalized data is input.

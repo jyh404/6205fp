@@ -102,10 +102,10 @@ module emin #(
 	logic signed [BIT_WIDTH-1:0] emin_val;
 
 	// for purposes of visualizing on gtkwave
-	logic signed [BIT_WIDTH-1:0] afactor7;
-	logic signed [BIT_WIDTH-1:0] afactor8;
-	assign afactor7 = a_factor[7];
-	assign afactor8 = a_factor[8];
+	///logic signed [BIT_WIDTH-1:0] afactor7;
+	//logic signed [BIT_WIDTH-1:0] afactor8;
+	//assign afactor7 = a_factor[7];
+	//assign afactor8 = a_factor[8];
 	logic signed [BIT_WIDTH-1:0] mult_res_0;
 	logic signed [BIT_WIDTH-1:0] mult_res_1;
 	logic signed [BIT_WIDTH-1:0] mult_res_2;
@@ -118,7 +118,7 @@ module emin #(
 	generate
 		genvar f;
 		for (f = 0; f < NUM_MULTS; ++f) begin
-			Multiply_re #(
+			Multiply_re_extra_shift #(
 				.WIDTH(BIT_WIDTH)
 			)
 			multiplier (

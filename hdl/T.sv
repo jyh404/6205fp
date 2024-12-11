@@ -7,7 +7,9 @@ module T #(
 	input wire rst_in,
 	input wire fft_valid, //valid for 160 cycles
 	input wire [BIT_WIDTH-1:0] fft_data, //take the 160 cycles where its valid
-    output logic [BIT_WIDTH-1:0] output_written [0:NU_VALUES-1],
+    output logic [BIT_WIDTH-1:0] output_written_0,
+    output logic [BIT_WIDTH-1:0] output_written_1,
+    output logic [BIT_WIDTH-1:0] output_written_2,
 	output logic output_valid,
 	output logic [$clog2(I)-1:0] output_address
 );
@@ -58,7 +60,7 @@ module T #(
 	);
 	
 	always_ff @(posedge clk_in) begin
-		partial_sums[0] <= fft_data_buffer>>8;
+		partial_sums[0] <= fft_data_buffer<<7;
 		partial_sums[1] <= temp_partial_1;
 		partial_sums[2] <= temp_partial_2;
 		fft_valid_buffer[0] <= fft_valid;
@@ -67,9 +69,9 @@ module T #(
 		counter_indx_buffer[1] <= counter_indx_buffer[0];
 		// All of these should be realigned.
 		
-		for (int i=0; i<NU_VALUES; i++) begin
-			output_written[i] <= running_sums[i] + partial_sums[i];
-		end
+		output_written_0 <= (fft_valid_buffer[1] == 1'b1) ? running_sums[0] + partial_sums[0] : 0;
+		output_written_1 <= (fft_valid_buffer[1] == 1'b1) ? running_sums[1] + partial_sums[1] : 0;
+		output_written_2 <= (fft_valid_buffer[1] == 1'b1) ? running_sums[2] + partial_sums[2] : 0;
 		output_address <= counter_indx_buffer[1];
 		output_valid <= fft_valid_buffer[1];
 		
