@@ -253,6 +253,7 @@ module top_level
 
 	
 	//This is used to output things in the log 'cause thats fun and all
+	//1 cycle delay
 	logic [7:0] f_output_data_log;
 	log2bad my_bad_log2 (
 		.clk_in(clk_100mhz),
@@ -270,7 +271,10 @@ module top_level
 		reordering_counter_buffer[2] <= reordering_counter;
 		reordering_counter_buffer[1] <= reordering_counter_buffer[2];
 		reordering_counter_buffer[0] <= reordering_counter_buffer[1];
-		reordered_flipflops[reordering_counter_buffer[0]] <= f_output_data_log;
+		//This gives a choice of output
+		//Top: log/8, Bottom: Top 8 bits.
+		// reordered_flipflops[reordering_counter_buffer[0]] <= f_output_data_log;
+		reordered_flipflops[reordering_counter_buffer[1]] <= f_output_data[31:24];
 		// i am sneaking the uart packet here... oops
 	end
 
@@ -409,11 +413,12 @@ module top_level
 			for (int i=320; i<390; i=i+1) begin
 				uart_420_packets[i] <= 8'h00;
 			end
-			uart_420_packets[390] <= 8'hff;
-			uart_420_packets[391] <= debug_formant_T[31:24];
-			uart_420_packets[392] <= debug_formant_T[23:16];
-			uart_420_packets[393] <= debug_formant_T[15:08];
-			uart_420_packets[394] <= debug_formant_T[07:00];
+			uart_420_packets[389] <= 8'hff;
+			uart_420_packets[390] <= debug_formant_T[31:24];
+			uart_420_packets[391] <= debug_formant_T[23:16];
+			uart_420_packets[392] <= debug_formant_T[15:08];
+			uart_420_packets[393] <= debug_formant_T[07:00];
+			uart_420_packets[394] <= debug_formant_E[31:24];
 			uart_420_packets[395] <= debug_formant_E[23:16];
 			uart_420_packets[396] <= debug_formant_E[15:08];
 			uart_420_packets[397] <= debug_formant_E[07:00];

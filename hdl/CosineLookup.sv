@@ -12,8 +12,8 @@ logic [31:0] lookup [0:319];
 
 //does this work because of some packed/unpacked shenanigans??
 always @(posedge clock) begin
-	res1 <= lookup[{addr1}]<<7;
-	res2 <= lookup[{addr2}]<<7;
+	res1 <= lookup[{addr1}];
+	res2 <= lookup[{addr2}];
 end
 
 // res = 1/I * cos(pi * addr / I)

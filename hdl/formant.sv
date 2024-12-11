@@ -190,6 +190,9 @@ module formant #(
 	logic phi_input_start;
 	logic [BIT_WIDTH-1:0] phi_output [0:FORMANTS-1];
 	logic phi_output_valid;
+	
+	// buffer time
+	logic [2:0] state_tracker;
 
 	always_ff @(posedge clk_in) begin
 		if (rst_in) begin
@@ -203,19 +206,23 @@ module formant #(
 				START: begin
 					current_i <= 0;
 					formant_valid <= 0;
+					state_tracker <= 3'b000;
 					if (fft_valid) begin
 						// FFT data is starting to arrive
 						state <= T_CALC;
 					end
 				end
 				T_CALC: begin
+					state_tracker <= 3'b001;
 					if (T_write_address == I - 1) begin
 						// we have written the last T value
 						state <= EMIN_CALC;
+						emin_input_valid <= 1'b1;
 					end
 				end
 				EMIN_CALC: begin
 					emin_input_valid <= 1'b0;
+					state_tracker <= 3'b010;
 					T_read_address <= proposed_T_read_address;
 					if (E_write_address == I - 1) begin
 						// we have written the last Emin value
@@ -314,7 +321,9 @@ module formant #(
 		.rst_in(rst_in),
 		.i(current_i),
 		.input_valid(emin_input_valid),
-		.T_resp(T_output_data),
+		.T_resp0(T_output_data[0]),
+		.T_resp1(T_output_data[1]),
+		.T_resp2(T_output_data[2]),
 		.T_req(proposed_T_read_address),
 		.j_out(E_write_address),
 		.data_out(E_input_data),

@@ -16,6 +16,8 @@ module T #(
 	// receives fft data sequentially (I = 160 samples)
 	// computes T(0, i) and outputs them sequentially to be stored in BRAM
 
+	localparam SCALE = 4; //we divide by 4 here to not overflow.
+
 	logic [BIT_WIDTH-1:0] running_sums [0:NU_VALUES-1]; //running total
 	logic [BIT_WIDTH-1:0] partial_sums [0:NU_VALUES-1]; //the thing(s) to add to the running total
 	logic [BIT_WIDTH-1:0] cosine_value [0:NU_VALUES-1]; //the cosine value to multiply to fft_data
@@ -43,24 +45,28 @@ module T #(
 		.res1(cosine_value[1]),
 		.res2(cosine_value[2])
 	);
+	
+	logic [2*BIT_WIDTH-1:0] temp_partial_0;
+	assign temp_partial_0 = (fft_data_buffer*(32'h00cccccc<<SCALE));
 
 	//1 clock cycle for time safety.
 	logic [BIT_WIDTH-1:0] temp_partial_1;
 	Multiply_re #(.WIDTH(BIT_WIDTH)) cos_mult_1(
-		.a_re(fft_data_buffer),
+		.a_re(fft_data_buffer<<SCALE),
 		.b_re(cosine_value[1]),
 		.m_re(temp_partial_1)
 	);
 	
 	logic [BIT_WIDTH-1:0] temp_partial_2;
 	Multiply_re #(.WIDTH(BIT_WIDTH)) cos_mult_2(
-		.a_re(fft_data_buffer),
+		.a_re(fft_data_buffer<<SCALE),
 		.b_re(cosine_value[2]),
 		.m_re(temp_partial_2)
 	);
+
 	
 	always_ff @(posedge clk_in) begin
-		partial_sums[0] <= fft_data_buffer<<7;
+		partial_sums[0] <= temp_partial_0[62:31];
 		partial_sums[1] <= temp_partial_1;
 		partial_sums[2] <= temp_partial_2;
 		fft_valid_buffer[0] <= fft_valid;

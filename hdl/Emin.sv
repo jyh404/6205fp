@@ -6,7 +6,9 @@ module emin #(
 	input wire rst_in,
 	input wire [$clog2(I)-1:0] i,
 	input wire input_valid,
-	input wire [BIT_WIDTH-1:0] T_resp [0:NU_VALUES-1],
+	input wire [BIT_WIDTH-1:0] T_resp0,
+	input wire [BIT_WIDTH-1:0] T_resp1,
+	input wire [BIT_WIDTH-1:0] T_resp2,
 	output logic [$clog2(I)-1:0] T_req,
 	output logic [$clog2(I)-1:0] j_out,
 	output logic [BIT_WIDTH-1:0] data_out,
@@ -27,6 +29,11 @@ module emin #(
 	poss_state state;
 	
 	logic signed [BIT_WIDTH-1:0] T_i [0:NU_VALUES-1];
+	logic [BIT_WIDTH-1:0] T_resp [0:NU_VALUES-1];
+	assign T_resp[0] = T_resp0;
+	assign T_resp[1] = T_resp1;
+	assign T_resp[2] = T_resp2;
+	
 	logic [$clog2(I)-1:0] i_reg;
 	logic [$clog2(I)-1:0] j_reg;
 	logic [1:0] delay;
