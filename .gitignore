@@ -1,3 +1,2 @@
-# *.log
-# *.fst
-# we should probably do this at some point
+sim_build/*
+_history/*
