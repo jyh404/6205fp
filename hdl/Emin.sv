@@ -31,18 +31,15 @@ module emin #(
 	logic [$clog2(I)-1:0] j_reg;
 	logic [1:0] delay;
 
-	parameter NUM_STAGES = 67;
-	logic signed [BIT_WIDTH-1:0] pipeline [0:NUM_STAGES-1][0:5];
+	parameter NUM_STAGES = 68;
+	logic signed [BIT_WIDTH-1:0] pipeline [0:NUM_STAGES-1][0:3];
+	logic sign_pipeline[0:NUM_STAGES-1][0:2];
 	// 0: 0 = j
 	// 1:
 	// 2: 1 = r(0, j-1, i), 2 = r(1, j-1, i), 3 = r(2, j-1, i)
-	// 3: 4 = alpha_k num, 5 = beta_k num, denom is sent to division
-	// 67: 4 = alpha_k, 5 = beta_k
-	// then write E_min to output
-
-	logic sign_pipeline [0:NUM_STAGES-1];
-	// because our division algorithm is unsigned
-	// just keep track of sign of the dividend
+	// 3: (alpha_k_num/denom), (beta_k_num/denom) sent to dividers
+	//	  divider is unsigned, so need to save signs in pipeline
+	// 67: dividers done, write E_min to output
 	
 	logic valid_pipeline [0:NUM_STAGES-1];
 	// keep track of when pipeline is still calculating
@@ -52,31 +49,73 @@ module emin #(
 	assign r1 = (pipeline[1][0]) ? ($signed(T_i[1]) - $signed(T_resp[1])) : $signed(T_i[1]);
 	assign r2 = (pipeline[1][0]) ? ($signed(T_i[2]) - $signed(T_resp[2])) : $signed(T_i[2]);
 
+	logic [2*BIT_WIDTH-1:0] dividend_a, dividend_b;
+	logic [2*BIT_WIDTH-1:0] quotient_a, quotient_b;
 	logic [2*BIT_WIDTH-1:0] divisor;
-	logic [2*BIT_WIDTH-1:0] quotient;
 
 	divider3 #(
 		.WIDTH(2*BIT_WIDTH)
 	)
-	divider (
+	divider_a (
 		.clk_in(clk_in),
 		.rst_in(rst_in),
-		.dividend_in(~64'b0), // be careful about how large our outputs are
+		.dividend_in(dividend_a),
 		.divisor_in(divisor),
 		.data_valid_in(1'b1),
-		.quotient_out(quotient),
+		.quotient_out(quotient_a),
 		.remainder_out(),
 		.data_valid_out(),
 		.error_out(),
 		.busy_out()
 	);
 
-	parameter NUM_MULTS = 9;
+	divider3 #(
+		.WIDTH(2*BIT_WIDTH)
+	)
+	divider_b (
+		.clk_in(clk_in),
+		.rst_in(rst_in),
+		.dividend_in(dividend_b),
+		.divisor_in(divisor),
+		.data_valid_in(1'b1),
+		.quotient_out(quotient_b),
+		.remainder_out(),
+		.data_valid_out(),
+		.error_out(),
+		.busy_out()
+	);
+
+	parameter NUM_MULTS = 7;
 	logic signed [BIT_WIDTH-1:0] a_factor [0:NUM_MULTS-1];
 	logic signed [BIT_WIDTH-1:0] b_factor [0:NUM_MULTS-1];
 	logic signed [BIT_WIDTH-1:0] mult_res [0:NUM_MULTS-1];
+
+	logic signed [BIT_WIDTH-1:0] alpha_k_num;
+	logic signed [BIT_WIDTH-1:0] beta_k_num;
+	logic signed [BIT_WIDTH-1:0] abs_alpha_k_num;
+	logic signed [BIT_WIDTH-1:0] abs_beta_k_num;
+	logic signed [BIT_WIDTH-1:0] denom;
+	logic signed [BIT_WIDTH-1:0] abs_alpha_k;
+	logic signed [BIT_WIDTH-1:0] abs_beta_k;
+	logic signed [BIT_WIDTH-1:0] alpha_k;
+	logic signed [BIT_WIDTH-1:0] beta_k;
+	logic signed [BIT_WIDTH-1:0] emin_val;
+
+	// for purposes of visualizing on gtkwave
+	logic signed [BIT_WIDTH-1:0] afactor7;
+	logic signed [BIT_WIDTH-1:0] afactor8;
+	assign afactor7 = a_factor[7];
+	assign afactor8 = a_factor[8];
+	logic signed [BIT_WIDTH-1:0] mult_res_0;
+	logic signed [BIT_WIDTH-1:0] mult_res_1;
+	logic signed [BIT_WIDTH-1:0] mult_res_2;
+	logic signed [BIT_WIDTH-1:0] mult_res_3;
+	assign mult_res_0 = mult_res[0];
+	assign mult_res_1 = mult_res[1];
+	assign mult_res_2 = mult_res[2];
+	assign mult_res_3 = mult_res[3];
+
 	generate
-		// we need seven multipliers for our pipeline
 		genvar f;
 		for (f = 0; f < NUM_MULTS; ++f) begin
 			Multiply_re #(
@@ -96,52 +135,47 @@ module emin #(
 	// 2 is stage 2 r(0) r(0)
 	// 3 is stage 2 r(1) r(1)
 	// 4 is stage 2 r(0) r(2)
-	// 5 is stage 66 r(1) alpha_k
-	// 6 is stage 66 r(2) beta_k
-	// 7 is stage 65 alpha_k_num (1/denom*sign = signed_quotient)
-	// 8 is stage 65 beta_k_num (1/denom*sign = signed_quotient)
+	// 5 is stage 67 r(1) alpha_k
+	// 6 is stage 67 r(2) beta_k
 	assign a_factor[0] = pipeline[2][1];
 	assign a_factor[1] = pipeline[2][2];
 	assign a_factor[2] = pipeline[2][1];
 	assign a_factor[3] = pipeline[2][2];
 	assign a_factor[4] = pipeline[2][1];
-	assign a_factor[5] = pipeline[66][2];
-	assign a_factor[6] = pipeline[66][3];
-	assign a_factor[7] = pipeline[65][4];
-	assign a_factor[8] = pipeline[65][5];
+	assign a_factor[5] = pipeline[67][2];
+	assign a_factor[6] = pipeline[67][3];
 	
 	assign b_factor[0] = pipeline[2][2];
 	assign b_factor[1] = pipeline[2][3];
 	assign b_factor[2] = pipeline[2][1];
 	assign b_factor[3] = pipeline[2][2];
 	assign b_factor[4] = pipeline[2][3];
-	assign b_factor[5] = pipeline[66][4];
-	assign b_factor[6] = pipeline[66][5];
-	assign b_factor[7] = signed_quotient;
-	assign b_factor[8] = signed_quotient;
+	assign b_factor[5] = alpha_k;
+	assign b_factor[6] = beta_k;
 
-	logic signed [BIT_WIDTH-1:0] alpha_k_num;
-	logic signed [BIT_WIDTH-1:0] beta_k_num;
-	logic signed [BIT_WIDTH-1:0] denom;
-	logic signed [BIT_WIDTH-1:0] abs_denom;
-	logic signed [BIT_WIDTH-1:0] trunc_quotient;
-	logic signed [BIT_WIDTH-2:0] flipped_quotient;
-	logic signed [BIT_WIDTH-1:0] signed_quotient;
-
+	// we are guaranteed (empirically) that alpha_k, beta_k are between -2 and 2
+	// given non-shifted values of num and denom
+	// so we shift num by 32 for more precision, then submit to divider
+	// then we expect only bottom 33 bits to be useful, we take the highest amount
+	// we are also guaranteed denom is positive: r(0) is largest in absolute value compared to r(1), r(2)
+	
 	assign alpha_k_num = $signed(mult_res[0]) - $signed(mult_res[1]);
 	assign beta_k_num = $signed(mult_res[4]) - $signed(mult_res[3]);
+	assign abs_alpha_k_num = (alpha_k_num[31]) ? $signed(-alpha_k_num) : alpha_k_num;
+	assign abs_beta_k_num = (beta_k_num[31]) ? $signed(-beta_k_num) : beta_k_num;
+	assign dividend_a = {1'b0, abs_alpha_k_num[30:0], 32'b0};
+	assign dividend_b = {1'b0, abs_beta_k_num[30:0], 32'b0};
 	assign denom = $signed(mult_res[2]) - $signed(mult_res[3]);
-	// absolute value in two's complement
-	assign abs_denom = (denom[31]) ? ~denom + 1 : denom;
+	assign divisor = (denom) ? {32'b0, denom} : 64'b1;
 
-	// truncate top bits of quotient
-	assign trunc_quotient = quotient[63:32];
-	// combine trunc_quotient with sign_pipeline[18]
-	// assume trunc_quotient[31] is 0 (IS THIS TRUE?),
-	// i.e. it's actually <= 31 bit unsigned integer, so flip as normal
-	assign flipped_quotient = ~trunc_quotient + 1; // need to split into two steps bc cocotb
-	assign signed_quotient = (sign_pipeline[18]) ? $signed(flipped_quotient) : $signed(trunc_quotient);
-
+	// now we calculate emin_val
+	// we need to be careful to not overflow on the arithmetic 
+	assign abs_alpha_k = $signed({1'b0, quotient_a[32:2]});
+	assign abs_beta_k = $signed({1'b0, quotient_b[32:2]}); 
+	assign alpha_k = (sign_pipeline[67][0]) ? $signed(-abs_alpha_k) : $signed(abs_alpha_k);
+	assign beta_k = (sign_pipeline[67][1]) ? $signed(-abs_beta_k) : $signed(abs_beta_k);
+	assign emin_val = ($signed(pipeline[67][1]) >>> 2) - $signed(mult_res[5]) - $signed(mult_res[6]);
+	
 	always_ff @(posedge clk_in) begin
 		if (rst_in) begin
 			integer b;
@@ -186,20 +220,20 @@ module emin #(
 						for (integer entry = 1; entry <= 5; ++entry) begin
 							pipeline[0][entry] <= 0;
 						end
-						sign_pipeline[0] <= 1'b0;
 						valid_pipeline[0] <= 1'b1;
 					end else begin
-						sign_pipeline[0] <= 1'b0;
 						valid_pipeline[0] <= 1'b0;
 					end
 					for (integer stage = 1; stage < NUM_STAGES; ++stage) begin
-						if (stage != 2 && stage != 3 && stage != 66) begin
+						if (stage != 2 && stage != 3) begin
 							// pass on value
 							// pipeline[stage] <= pipeline[stage-1]; doesn't work on cocotb
-							for (integer entry = 0; entry <= 5; ++entry) begin
-								pipeline[stage][entry] <= pipeline[stage-1][entry];
-							end
-							sign_pipeline[stage] <= sign_pipeline[stage-1];
+							pipeline[stage][0] <= pipeline[stage-1][0];
+							pipeline[stage][1] <= pipeline[stage-1][1];
+							pipeline[stage][2] <= pipeline[stage-1][2];
+							pipeline[stage][3] <= pipeline[stage-1][3];
+							sign_pipeline[stage][0] <= sign_pipeline[stage-1][0];
+							sign_pipeline[stage][1] <= sign_pipeline[stage-1][1];
 							valid_pipeline[stage] <= valid_pipeline[stage-1];
 						end else if (stage == 2) begin
 							// calculate values from T_resp which just came in
@@ -207,36 +241,23 @@ module emin #(
 							pipeline[stage][1] <= r0;
 							pipeline[stage][2] <= r1;
 							pipeline[stage][3] <= r2;
-							pipeline[stage][4] <= pipeline[stage-1][4];
-							pipeline[stage][5] <= pipeline[stage-1][5];
-							sign_pipeline[stage] <= sign_pipeline[stage-1];
+							sign_pipeline[stage][0] <= sign_pipeline[stage-1][0];
+							sign_pipeline[stage][1] <= sign_pipeline[stage-1][1];
 							valid_pipeline[stage] <= valid_pipeline[stage-1];
-						end else if (stage == 3) begin
-							// calculate alpha_k num, beta_k num, denom to divisor
-							pipeline[stage][0] <= pipeline[stage-1][0];
-							pipeline[stage][1] <= pipeline[stage-1][1];
-							pipeline[stage][2] <= pipeline[stage-1][2];
-							pipeline[stage][3] <= pipeline[stage-1][3];
-							pipeline[stage][4] <= alpha_k_num;
-							pipeline[stage][5] <= beta_k_num;
-							sign_pipeline[stage] <= denom[31];
-							valid_pipeline[stage] <= valid_pipeline[stage-1];
-							divisor <= (abs_denom) ? {32'b0, abs_denom} : 64'b1; // avoid problem with 1
 						end else begin
-							// stage == 66, form alpha_k, beta_k
+							// stage == 3, calculate alpha_k num, beta_k num
 							pipeline[stage][0] <= pipeline[stage-1][0];
 							pipeline[stage][1] <= pipeline[stage-1][1];
 							pipeline[stage][2] <= pipeline[stage-1][2];
 							pipeline[stage][3] <= pipeline[stage-1][3];
-							pipeline[stage][4] <= mult_res[7];
-							pipeline[stage][5] <= mult_res[8];
-							sign_pipeline[stage] <= sign_pipeline[stage-1];
+							sign_pipeline[stage][0] <= alpha_k_num[31];
+							sign_pipeline[stage][1] <= beta_k_num[31];
 							valid_pipeline[stage] <= valid_pipeline[stage-1];
 						end
 					end
 					if (valid_pipeline[NUM_STAGES-1]) begin
 						j_out <= pipeline[NUM_STAGES-1][0];
-						data_out <= $signed(pipeline[NUM_STAGES-1][1]) - $signed(mult_res[5]) - $signed(mult_res[6]);
+						data_out <= emin_val;
 						output_valid <= 1'b1;
 						if (pipeline[NUM_STAGES-1][0] == i) begin // we output the last one
 							state <= START;

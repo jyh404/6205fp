@@ -17,7 +17,7 @@ def tobit32(a):
 async def test_a(dut):
     """cocotb test for Emin module at i = 1"""
     i = 1
-    T = 30 # run for long time, see what happens
+    T = 100 # run for long time, see what happens
     dut._log.info("Starting...")
     cocotb.start_soon(Clock(dut.clk_in, 10, units="ns").start())
     dut.rst_in.value = 1
@@ -28,7 +28,7 @@ async def test_a(dut):
     dut.i.value = i
     dut.input_valid.value = 1
 
-    T_BRAM_queue = [] # use a queue to fake BRAM with two cycle delay
+    T_BRAM_queue = [[tobit32(0), tobit32(0), tobit32(0)]] # use a queue to fake BRAM with two cycle delay
 
     for _ in range(T):
         # pretend that BRAM has responded
@@ -39,9 +39,9 @@ async def test_a(dut):
         if (dut.T_req.value.is_resolvable):
             T_BRAM_queue.append(
                 [
-                    tobit32(dut.T_req.value.integer * 0),
+                    tobit32(dut.T_req.value.integer * 2 * (1<<16)),
                     tobit32(dut.T_req.value.integer * 1 * (1<<16)),
-                    tobit32(dut.T_req.value.integer * 2 * (1<<16))
+                    tobit32(dut.T_req.value.integer * 0 * (1<<16))
                 ]
             )
         else:
