@@ -13,7 +13,7 @@ module phi #(
     input wire input_start,
     input wire input_valid,
 	output logic [BIT_WIDTH-1:0] debug_to_acos,
-    output logic [0:FORMANTS-1] [BIT_WIDTH-1:0] output_data ,
+    output logic [0:FORMANTS-1] [BIT_WIDTH-1:0] output_data,
     output logic output_valid
 );
     // assumes that segments have been calculated already

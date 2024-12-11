@@ -46,7 +46,7 @@ async def test_a(dut):
         await ClockCycles(dut.clk_in,1)
     print("************************************\n\n\nT FINISHED \n\n************************************")
 
-    raise AssertionError
+    # raise AssertionError
     which_state = 0
     for i in range(100000):
         #dut._log.info(" State: "+str(dut.state_tracker.value))
@@ -67,19 +67,20 @@ async def test_a(dut):
         #check all I/O from f
         #if (which_state == 3):
         if (which_state == 3 and dut.f_output_valid.value==1):
-        #if (which_state == 3 and dut.f_iter_done.value==1):
-            #dut._log.info(" f_begin_iter "+str(dut.f_begin_iter.value))
-            dut._log.info(" i/current_i "+str(dut.current_i.value))
-            #dut._log.info(" e_prev/E_output_data "+str(dut.E_output_data.value))
-            #dut._log.info(" f_prev/F_output_data "+str(dut.F_output_data.value))        
-            #dut._log.info(" k_req/k_req_begin "+str(dut.k_req_begin.value))
-            #dut._log.info(" j_req/j_req "+str(dut.j_req.value))
-            #dut._log.info(" k_write/k_write "+str(dut.k_write.value))
-            dut._log.info(" f_data/F_input_data "+str(dut.F_input_data.value))
-            dut._log.info(" b_data/B_input_data "+str(dut.B_input_data.value))
-            #dut._log.info(" output_valid/f_output_valid "+str(dut.f_output_valid.value))
-            dut._log.info(" iter_done/f_iter_done "+str(dut.f_iter_done.value))
-            print("-----------------------1 CLOCK CYCLE-----------------------")
+            pass # sorry silenced output so that it can run faster
+        # #if (which_state == 3 and dut.f_iter_done.value==1):
+        #     #dut._log.info(" f_begin_iter "+str(dut.f_begin_iter.value))
+        #     dut._log.info(" i/current_i "+str(dut.current_i.value))
+        #     #dut._log.info(" e_prev/E_output_data "+str(dut.E_output_data.value))
+        #     #dut._log.info(" f_prev/F_output_data "+str(dut.F_output_data.value))        
+        #     #dut._log.info(" k_req/k_req_begin "+str(dut.k_req_begin.value))
+        #     #dut._log.info(" j_req/j_req "+str(dut.j_req.value))
+        #     #dut._log.info(" k_write/k_write "+str(dut.k_write.value))
+        #     dut._log.info(" f_data/F_input_data "+str(dut.F_input_data.value))
+        #     dut._log.info(" b_data/B_input_data "+str(dut.B_input_data.value))
+        #     #dut._log.info(" output_valid/f_output_valid "+str(dut.f_output_valid.value))
+        #     dut._log.info(" iter_done/f_iter_done "+str(dut.f_iter_done.value))
+        #     print("-----------------------1 CLOCK CYCLE-----------------------")
         which_state = dut.state_tracker.value
         await ClockCycles(dut.clk_in,1)
 
@@ -87,7 +88,6 @@ async def test_a(dut):
             print("F and B finished.")
             break
 #currently finishes completely at 78295 cycles
-
         
     for i in range(100):
         dut._log.info(" segment_values/the good stuff "+str(dut.segment_values.value))
@@ -114,6 +114,7 @@ async def test_a(dut):
         if dut.phi_output_valid.value == 1:
             dut._log.info(" output_valid " + str(dut.phi_output_valid.value))
             dut._log.info(" output_data " + str(dut.phi_output.value))
+            dut._log.info(" formant 1 " + str(int(str(dut.phi_output.value)[-1:-31], 2)))
             break
         #print("-----------------------1 CLOCK CYCLE-----------------------")
         await ClockCycles(dut.clk_in,1)

@@ -499,7 +499,37 @@ module top_level
 	// localparam DATA_LEN = 8;
 	// localparam FBRAM_DEPTH = FRAME_WIDTH * FRAME_HEIGHT / DATA_LEN;
 
+	// // formant_graph represents 8 samples of formant data over the last 1/60 s
+	// // but we sample only every 1/100 s, so just set all of formant_graph to the same thing
+	// // i.e. the last sample received in the frame window
 	// logic [DATA_LEN-1:0] formant_graph [0:FRAME_HEIGHT-1];
+
+	// // assume freq_buffer gives us FORMANT 32-bit numbers that are between 0 and 5000 (very wrong)
+	// // TODO: adjust this!
+	// // is zeroing all of this out possible?
+	
+	// // we need this to be at least 625, note that we need to flip since
+	// // row 0 is at the top of the screen
+	// localparam MAX_HEIGHT = 700; 
+	// always_ff @(posedge clk_100mhz) begin
+	// 	if (formant_out_valid) begin
+	// 		for (int row = 0; row < FRAME_HEIGHT; ++row) begin
+	// 			if (row == MAX_HEIGHT - (freq_buffer[0] >>> 3)) begin
+	// 				formant_graph[row] <= 8'hff;
+	// 			end else if (row == MAX_HEIGHT - (freq_buffer[1] >>> 3)) begin
+	// 				formant_graph[row] <= 8'hff;
+	// 			end else if (row == MAX_HEIGHT - (freq_buffer[2] >>> 3)) begin
+	// 				formant_graph[row] <= 8'hff;
+	// 			end else if (row == MAX_HEIGHT - (freq_buffer[3] >>> 3)) begin
+	// 				formant_graph[row] <= 8'hff;
+	// 			end else if (row == MAX_HEIGHT - (freq_buffer[4] >>> 3)) begin
+	// 				formant_graph[row] <= 8'hff;
+	// 			end else begin
+	// 				formant_graph[row] <= 8'h00;
+	// 			end
+	// 		end
+	// 	end
+	// end
 
 	// logic [$clog2(FBRAM_DEPTH)-1:0] fbram_write_address;
 	// logic [DATA_LEN-1:0] fbram_input_data;
@@ -573,32 +603,38 @@ module top_level
     // logic tmds_signal [2:0]; //output of each TMDS serializer!
 
 	// typedef enum {WAIT_DRAW, DRAW, HBLANK, VBLANK} frame_state;
-	// framestate state;
+	// frame_state state;
 
-	// logic [FRAME_WIDTH-1:0] row_data;
-	// logic [$clog2(FRAME_WIDTH)-1:0] row_offset;
-	// logic [$clog2(FRAME_WIDTH)-1:0] row_index;
-	// logic [$clog2(FRAME_HEIGHT)-1:0] col_index;
-	// logic [$clog2(FRAME_WIDTH)-1:0] row_index_pipeline [0:1];
+	// // draw row by row
+	// // fetch next row's data during blanking period for the row
+	// // update the bram data with new formants by inserting into
+	// // current offset, then move offset over by 1
+	// // recall there are only FRAME_WIDTH/DATA_LEN cols
+	// logic [DATA_LEN-1:0] row_data [0:FRAME_WIDTH/DATA_LEN];
+	// logic [$clog2(FRAME_WIDTH / DATA_LEN)-1:0] col_offset;
+	// logic [$clog2(FRAME_WIDTH / DATA_LEN)-1:0] col_index;
+	// logic [$clog2(FRAME_HEIGHT)-1:0] row_index;
+	// logic [$clog2(FRAME_WIDTH / DATA_LEN)-1:0] col_index_pipeline [0:1];
 
 	// // for BRAM waiting
-	// always_ff @(posedge clk_in) begin
-	// 	row_index_pipeline[0] <= row_index;
-	// 	row_index_pipeline[1] <= row_index_pipeline[0];
+	// always_ff @(posedge clk_100mhz) begin
+	// 	col_index_pipeline[0] <= col_index;
+	// 	col_index_pipeline[1] <= col_index_pipeline[0];
 	// end
 
 	// // drawing row by row: just do white if on, black if off
 	// always_comb begin
-	// 	red = (row_data[hcount]) ? 8'hff : 8'h00;
-	// 	green = (row_data[hcount]) ? 8'hff : 8'h00;
-	// 	blue = (row_data[hcount]) ? 8'hff : 8'h00;
+	// 	red = (row_data[hcount>>3][hcount[2:0]]) ? 8'hff : 8'h00;
+	// 	green = (row_data[hcount>>3][hcount[2:0]]) ? 8'hff : 8'h00;
+	// 	blue = (row_data[hcount>>3][hcount[2:0]]) ? 8'hff : 8'h00;
 	// end
 
-	// always_ff @(posedge clk_in) begin
-	// 	if (rst_in) begin
-	// 		state <= DRAW;
-	// 		row_offset <= 0;
+	// always_ff @(posedge clk_100mhz) begin
+	// 	if (sys_rst) begin
+	// 		state <= WAIT_DRAW;
+	// 		col_offset <= 0;
 	// 		fbram_read_address <= 0;
+	// 		fbram_input_data_valid <= 1'b0;
 	// 	end else begin
 	// 		case (state) 
 	// 			WAIT_DRAW: begin
@@ -610,46 +646,62 @@ module top_level
 	// 			DRAW: begin
 	// 				if (hcount == FRAME_WIDTH - 1) begin
 	// 					state <= HBLANK;
-	// 					row_index <= 0;
-	// 					fbram_read_address <= (FRAME_WIDTH / DATA_LEN) * (vcount) + row_offset;
+	// 					col_index <= 0;
+	// 					if (vcount == FRAME_HEIGHT - 1) begin
+	// 						fbram_read_address <= col_offset;
+	// 					end else begin
+	// 						fbram_read_address <= (FRAME_WIDTH / DATA_LEN) * (vcount + 1) + col_offset;
+	// 					end
 	// 				end
 	// 			end
 	// 			HBLANK: begin
-	// 				if (row_index <= FRAME_WIDTH - DATA_LEN) begin
-	// 					if (fbram_read_address == (FRAME_WIDTH / DATA_LEN) * (vcount + 1) - 1) begin
-	// 						fbram_read_address <= (FRAME_WIDTH / DATA_LEN) * (vcount);
+	// 				// need to load the next row from BRAM into row_data
+	// 				if (vcount == FRAME_HEIGHT - 1) begin
+	// 					if (fbram_read_address == (FRAME_WIDTH / DATA_LEN) - 1) begin
+	// 						fbram_read_address <= 0;
 	// 					end else begin
 	// 						fbram_read_address <= fbram_read_address + 1;
-	// 					end
-	// 					row_index <= row_index + DATA_LEN;
+	// 					end 
+	// 				end else begin
+	// 					if (fbram_read_address == (FRAME_WIDTH / DATA_LEN) * (vcount + 2) - 1) begin
+	// 						fbram_read_address <= (FRAME_WIDTH / DATA_LEN) * (vcount + 1);
+	// 					end else begin
+	// 						fbram_read_address <= fbram_read_address + 1;
+	// 					end 
 	// 				end
-	// 				if (row_index_pipeline[1] <= FRAME_WIDTH - DATA_LEN) begin
-	// 					row_data[row_index_pipeline[1]+DATA_LEN-1:row_index_pipeline[1]] <= fbram_output_data;
-	// 					if (row_index_pipeline[1] == FRAME_WIDTH - DATA_LEN) begin
+	// 				col_index <= col_index + 1;
+	// 				if (col_index_pipeline[1] <= FRAME_WIDTH / DATA_LEN - 1) begin
+	// 					for (int col = 0; col < FRAME_WIDTH / DATA_LEN; col++) begin
+	// 						if (col == col_index_pipeline[1]) begin
+	// 							row_data[col] <= fbram_output_data;
+	// 						end
+	// 					end
+	// 					if (col_index_pipeline[1] == FRAME_WIDTH / DATA_LEN - 1) begin
 	// 						if (vcount < FRAME_HEIGHT - 1) begin
 	// 							state <= WAIT_DRAW;
 	// 						end else begin
 	// 							state <= VBLANK;
-	// 							col_index <= 0;
+	// 							row_index <= 0;
 	// 						end
 	// 					end
 	// 				end
 	// 			end
 	// 			VBLANK: begin
 	// 				// move formant_graphs data into bram
+	// 				// once we draw, zero out
 	// 				// when done, go to WAIT_DRAW
-	// 				if (col_index < FRAME_HEIGHT) begin
-	// 					fbram_write_address <= (FRAME_HEIGHT / DATA_LEN) * col_index + row_offset;
-	// 					fbram_input_data <= formant_graph[col_index];
+	// 				if (row_index < FRAME_HEIGHT) begin
+	// 					fbram_write_address <= (FRAME_HEIGHT / DATA_LEN) * row_index + col_offset;
+	// 					fbram_input_data <= formant_graph[row_index];
 	// 					fbram_input_data_valid <= 1'b1;
-	// 					col_index <= col_index + 1;
+	// 					row_index <= row_index + 1;
 	// 				end else begin
 	// 					state <= WAIT_DRAW;
 	// 					fbram_input_data_valid <= 1'b0;
-	// 					if (row_offset == (FRAME_HEIGHT / DATA_LEN) - 1) begin
-	// 						row_offset <= 0;
+	// 					if (col_offset == (FRAME_HEIGHT / DATA_LEN) - 1) begin
+	// 						col_offset <= 0;
 	// 					end else begin
-	// 						row_offset <= row_offset + 1;
+	// 						col_offset <= col_offset + 1;
 	// 					end
 	// 				end
 	// 			end
