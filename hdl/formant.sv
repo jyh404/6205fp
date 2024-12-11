@@ -261,8 +261,8 @@ module formant #(
 					end
 				end
 				SEGMENT_CALC: begin
-					state_tracker <= 4'b100;
-					if (segment) begin
+					state_tracker <= 3'b100;
+					if (segment != 0) begin
 						if (delay) begin
 							delay <= delay - 1;
 						end else begin
@@ -284,13 +284,14 @@ module formant #(
 				PHI_CALC: begin
 					// send the T_vals sequentially
 					// don't do any fancy stuff
+					state_tracker <= 3'b101;
 					phi_input_start <= 1'b0;
 					if (segment < FORMANTS) begin
 						if (delay) begin
 							delay <= delay - 1;
 							phi_input_valid <= 1'b0;
 						end else begin
-							delay <= 2'b10;
+							delay <= 1'b1;
 							phi_input_valid <= 1'b1;
 							phi_T_read_address <= segment_values[segment+1];
 							segment <= segment + 1;
@@ -358,7 +359,7 @@ module formant #(
 	always_comb begin
 		for (int i=0; i<FORMANTS; i++) begin
 			F_input_data_valid[i] = (i == k_write) ? f_output_valid : 1'b0; 	
-			B_input_data_valid[i] = (i == k_write) ? f_output_valid : 1'b0; 	
+			B_input_data_valid[i] = (i+1 == k_write) ? f_output_valid : 1'b0; 	
 		end
 	end
 
