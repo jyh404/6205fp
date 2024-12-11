@@ -199,6 +199,7 @@ module formant #(
 			state <= START;
 			current_i <= 0;
 			emin_input_valid <= 0;
+			f_begin_iter <= 0;
 			for (integer b = 0; b <= FORMANTS; ++b) begin
 				segment_values[b] <= 0;
 			end

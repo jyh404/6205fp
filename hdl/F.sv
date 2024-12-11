@@ -78,7 +78,10 @@ module f #(
 					b_data <= 0;
 				end
 				CALC: begin
-					if (j_pipeline[0] == i-1) begin
+					//if (j_pipeline[0] == i-1) begin
+					//was failing for -1==0-1, dunno why.
+					if ((i-j_pipeline[0])==8'b1) begin
+						j_pipeline[0] <= j_pipeline[0];
 						valid_pipeline[0] <= 1'b0;
 					end else begin
 						j_pipeline[0] <= j_pipeline[0] + 1;
@@ -104,11 +107,13 @@ module f #(
 							b_data <= j_pipeline[2];
 						end
 					end
-					if (j_pipeline[3] == i-1 && valid_pipeline[3]) begin
+					if ((i-j_pipeline[3])==8'b1 && valid_pipeline[3]) begin
+					//if (j_pipeline[3] == i-1 && valid_pipeline[3]) begin
 						// reached the end
 						k_write <= k_req;
 						f_data <= cur_f;
 						output_valid <= 1'b1;
+						//for small i compute max less formants
 						if (k_req == i+1 || k_req == FORMANTS) begin
 							iter_done <= 1'b1;
 							state <= START;
