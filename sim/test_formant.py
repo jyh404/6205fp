@@ -11,7 +11,7 @@ from cocotb.runner import get_runner
 
 TAG = "formant"
 
-fft_values = [1024, 131072, 101070, 7692387, 39903169, 25874004, 1359834, 7053950, 79806338, 87029429, 12937002, 9147841, 268435456, 536870912, 159612677, 3526975, 56431603, 246156398, 123078199, 4987896, 16777216, 112863206, 87029429, 4573920, 12937002, 146365470, 268435456, 47453132, 3526975, 36591367, 87029429, 36591367, 1048576, 1048576, 4194304, 1763487, 77935, 55108, 110217, 285870, 11585, 11585, 19483, 169979, 8192, 11585, 8192, 23170, 8192, 32768, 23170, 92681, 38967, 11585, 1, 1, 32768, 4096, 8192, 27554, 77935, 4096, 27554, 27554, 110217, 11585, 1, 8192, 4096, 4096, 35733, 1, 8192, 19483, 4096, 46340, 1, 1, 4096, 1, 4096, 131072, 84989, 32768, 19483, 71467, 404281, 262144, 262144, 2493948, 4987896, 1482910, 11585, 142935, 110217, 131072, 92681, 11585, 131072, 202140, 131072, 71467, 50535, 38967, 27554, 8192, 27554, 60096, 38967, 19483, 19483, 77935, 202140, 110217, 16384, 169979, 1048576, 571740, 1246974, 9975792, 16777216, 4194304, 11585, 55108, 440871, 571740, 65536, 50535, 262144, 285870, 285870, 92681, 65536, 65536, 4096, 19483, 142935, 155871, 11585, 27554, 11585, 1, 16384, 110217, 77935, 8192, 4096, 8192, 11585, 46340, 71467, 4096, 55108, 71467, 1, 16384, 65536, 185363, 370727, 285870]
+fft_values = [16384, 131072, 101070, 7692387, 39903169, 25874004, 1359834, 7053950, 79806338, 87029429, 12937002, 9147841, 268435456, 536870912, 159612677, 3526975, 56431603, 246156398, 123078199, 4987896, 16777216, 112863206, 87029429, 4573920, 12937002, 146365470, 268435456, 47453132, 3526975, 36591367, 87029429, 36591367, 1048576, 1048576, 4194304, 1763487, 77935, 55108, 110217, 285870, 11585, 11585, 19483, 169979, 8192, 11585, 8192, 23170, 8192, 32768, 23170, 92681, 38967, 11585, 1, 1, 32768, 4096, 8192, 27554, 77935, 4096, 27554, 27554, 110217, 11585, 1, 8192, 4096, 4096, 35733, 1, 8192, 19483, 4096, 46340, 1, 1, 4096, 1, 4096, 131072, 84989, 32768, 19483, 71467, 404281, 262144, 262144, 2493948, 4987896, 1482910, 11585, 142935, 110217, 131072, 92681, 11585, 131072, 202140, 131072, 71467, 50535, 38967, 27554, 8192, 27554, 60096, 38967, 19483, 19483, 77935, 202140, 110217, 16384, 169979, 1048576, 571740, 1246974, 9975792, 16777216, 4194304, 11585, 55108, 440871, 571740, 65536, 50535, 262144, 285870, 285870, 92681, 65536, 65536, 4096, 19483, 142935, 155871, 11585, 27554, 11585, 1, 16384, 110217, 77935, 8192, 4096, 8192, 11585, 46340, 71467, 4096, 55108, 71467, 1, 16384, 65536, 185363, 370727, 285870]
 
 @cocotb.test()
 async def test_a(dut):
@@ -36,20 +36,32 @@ async def test_a(dut):
         dut.fft_valid.value = 0
         dut.fft_data.value = 0
         dut._log.info(" Address: "+str(dut.T_write_address.value))
-        dut._log.info(" Sums: "+str(dut.T_input_data.value))
-        dut._log.info(" Valid: "+str(dut.T_input_data_valid.value))
-        dut._log.info(" State: "+str(dut.state_tracker.value))
+        #dut._log.info(" Sums: "+str(dut.T_input_data.value))
+        #dut._log.info(" Valid: "+str(dut.T_input_data_valid.value))
+        #dut._log.info(" State: "+str(dut.state_tracker.value))
         dut._log.info(" E writing: "+str(dut.E_input_data_valid.value))
+        dut._log.info(" T address: "+str(dut.T_read_address.value))
+        dut._log.info(" Analyzed i: " + str(dut.current_i.value))
+        dut._log.info(" E in valid: " + str(dut.emin_input_valid.value))
         await ClockCycles(dut.clk_in,1)
     print("************************************\n\n\nT FINISHED \n\n************************************")
 
-    for i in range(100):
+    for i in range(400):
         #dut._log.info(" State: "+str(dut.state_tracker.value))
-        dut._log.info(" E writing: "+str(dut.E_input_data_valid.value))
         dut._log.info(" T output: "+str(dut.T_output_data.value))
-        dut._log.info(" E data: "+str(dut.E_input_data.value))
-        #dut._log.info(" E write address: "+str(dut.E_write_address.value))
+        dut._log.info(" State: "+str(dut.state_tracker.value))
+        if dut.E_input_data_valid.value == 1:
+            dut._log.info(" E writing: "+str(dut.E_input_data_valid.value))
+            #dut._log.info(" T address: "+str(dut.T_read_address.value))
+            dut._log.info(" E data: "+str(dut.E_input_data.value))
+            dut._log.info(" E write address: "+str(dut.E_write_address.value))
+            dut._log.info(" current_i: "+str(dut.current_i.value))
+        dut._log.info(" f_begin_iter: "+str(dut.f_begin_iter.value))
+        dut._log.info(" F_input_data: "+str(dut.F_input_data.value))
+        dut._log.info(" f_output_valid: "+str(dut.f_output_valid.value))
+        dut._log.info(" B_input_data: "+str(dut.B_input_data.value))
         await ClockCycles(dut.clk_in,1)
+        
 
     """
     dut.start.value = 1

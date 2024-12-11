@@ -198,6 +198,7 @@ module formant #(
 		if (rst_in) begin
 			state <= START;
 			current_i <= 0;
+			emin_input_valid <= 0;
 			for (integer b = 0; b <= FORMANTS; ++b) begin
 				segment_values[b] <= 0;
 			end
@@ -224,13 +225,14 @@ module formant #(
 					emin_input_valid <= 1'b0;
 					state_tracker <= 3'b010;
 					T_read_address <= proposed_T_read_address;
-					if (E_write_address == I - 1) begin
+					if ((E_write_address == 0) && E_input_data_valid) begin
 						// we have written the last Emin value
 						state <= F_CALC;
 						f_begin_iter <= 1'b1;
 					end
 				end
 				F_CALC: begin
+					state_tracker <= 3'b011;
 					f_begin_iter <= 1'b0;
 					if (f_iter_done) begin
 						if (current_i < I - 1) begin

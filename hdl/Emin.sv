@@ -202,7 +202,7 @@ module emin #(
 						i_reg <= i;
 						T_req <= i;
 						state <= REQ_I;
-						delay <= 2'b10; // delay = 1 means 2 cycles later
+						delay <= 2'b11; // delay = 1 means 2 cycles later
 					end //delay now +1 for proposed address to move in formant.sv
 				end
 				REQ_I: begin
