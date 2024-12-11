@@ -276,9 +276,11 @@ module formant #(
 					end else begin
 						state <= PHI_CALC;
 						delay <= 1'b1;
-						segment_T_read_address <= segment_values[1];
+						segment_T_read_address <= segment_values[2];
+						// changed to not try and read the invalid -1 value.
 						segment <= 1;
 						phi_input_start <= 1'b1;
+						phi_input_valid <= 1'b0;
 					end
 				end
 				PHI_CALC: begin
@@ -291,7 +293,7 @@ module formant #(
 							delay <= delay - 1;
 							phi_input_valid <= 1'b0;
 						end else begin
-							delay <= 1'b1;
+							delay <= 2'b10;
 							phi_input_valid <= 1'b1;
 							phi_T_read_address <= segment_values[segment+1];
 							segment <= segment + 1;
