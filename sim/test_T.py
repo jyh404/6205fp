@@ -22,16 +22,16 @@ async def test_a(dut):
     dut.rst_in.value = 0
     for i in range(160):
         dut.fft_valid.value = 1
-        dut.fft_data.value = 2**31-1
+        dut.fft_data.value = 2**23-1
         dut._log.info(" Address: "+str(dut.output_address.value))
-        dut._log.info(" Sums: "+str(dut.output_written.value))
+        dut._log.info(" Sums: "+str(dut.output_written_1.value))
         dut._log.info(" Valid: "+str(dut.output_valid.value))
         await ClockCycles(dut.clk_in,1)
     for i in range(10):
         dut.fft_valid.value = 0
         dut.fft_data.value = 2**31-1
         dut._log.info(" Address: "+str(dut.output_address.value))
-        dut._log.info(" Sums: "+str(dut.output_written.value))
+        dut._log.info(" Sums: "+str(dut.output_written_1.value))
         dut._log.info(" Valid: "+str(dut.output_valid.value))
         await ClockCycles(dut.clk_in,1)
 

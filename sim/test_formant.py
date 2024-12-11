@@ -11,27 +11,44 @@ from cocotb.runner import get_runner
 
 TAG = "formant"
 
+fft_values = [1024, 131072, 101070, 7692387, 39903169, 25874004, 1359834, 7053950, 79806338, 87029429, 12937002, 9147841, 268435456, 536870912, 159612677, 3526975, 56431603, 246156398, 123078199, 4987896, 16777216, 112863206, 87029429, 4573920, 12937002, 146365470, 268435456, 47453132, 3526975, 36591367, 87029429, 36591367, 1048576, 1048576, 4194304, 1763487, 77935, 55108, 110217, 285870, 11585, 11585, 19483, 169979, 8192, 11585, 8192, 23170, 8192, 32768, 23170, 92681, 38967, 11585, 1, 1, 32768, 4096, 8192, 27554, 77935, 4096, 27554, 27554, 110217, 11585, 1, 8192, 4096, 4096, 35733, 1, 8192, 19483, 4096, 46340, 1, 1, 4096, 1, 4096, 131072, 84989, 32768, 19483, 71467, 404281, 262144, 262144, 2493948, 4987896, 1482910, 11585, 142935, 110217, 131072, 92681, 11585, 131072, 202140, 131072, 71467, 50535, 38967, 27554, 8192, 27554, 60096, 38967, 19483, 19483, 77935, 202140, 110217, 16384, 169979, 1048576, 571740, 1246974, 9975792, 16777216, 4194304, 11585, 55108, 440871, 571740, 65536, 50535, 262144, 285870, 285870, 92681, 65536, 65536, 4096, 19483, 142935, 155871, 11585, 27554, 11585, 1, 16384, 110217, 77935, 8192, 4096, 8192, 11585, 46340, 71467, 4096, 55108, 71467, 1, 16384, 65536, 185363, 370727, 285870]
+
 @cocotb.test()
 async def test_a(dut):
-    """cocotb test for lightweight sqrt module"""
+    """cocotb test for formant module"""
     dut._log.info("Starting...")
     cocotb.start_soon(Clock(dut.clk_in, 10, units="ns").start())
     dut.rst_in.value = 1
     dut.fft_valid = 0
     await ClockCycles(dut.clk_in,3)
-    for i in range(160):
+    dut.rst_in.value = 0
+    for i in range(160): #input
         dut.fft_valid.value = 1
-        dut.fft_data.value = 2**31-1
-        dut._log.info(" Address: "+str(dut.output_address.value))
-        dut._log.info(" Sums: "+str(dut.output_written.value))
-        dut._log.info(" Valid: "+str(dut.output_valid.value))
+        dut.fft_data.value = fft_values[i]
+        dut._log.info(" fft_valid: "+str(dut.fft_valid.value))
+        dut._log.info(" fft_data: "+str(dut.fft_data.value))
+        dut._log.info(" Address: "+str(dut.T_write_address.value))
+        dut._log.info(" Sums: "+str(dut.T_input_data.value))
+        dut._log.info(" Valid: "+str(dut.T_input_data_valid.value))
         await ClockCycles(dut.clk_in,1)
-    for i in range(10):
+    print("************************************\n\n\nALL INPUTS GIVEN \n\n************************************")
+    for i in range(5): #wait
         dut.fft_valid.value = 0
-        dut.fft_data.value = 2**31-1
-        dut._log.info(" Address: "+str(dut.output_address.value))
-        dut._log.info(" Sums: "+str(dut.output_written.value))
-        dut._log.info(" Valid: "+str(dut.output_valid.value))
+        dut.fft_data.value = 0
+        dut._log.info(" Address: "+str(dut.T_write_address.value))
+        dut._log.info(" Sums: "+str(dut.T_input_data.value))
+        dut._log.info(" Valid: "+str(dut.T_input_data_valid.value))
+        dut._log.info(" State: "+str(dut.state_tracker.value))
+        dut._log.info(" E writing: "+str(dut.E_input_data_valid.value))
+        await ClockCycles(dut.clk_in,1)
+    print("************************************\n\n\nT FINISHED \n\n************************************")
+
+    for i in range(100):
+        #dut._log.info(" State: "+str(dut.state_tracker.value))
+        dut._log.info(" E writing: "+str(dut.E_input_data_valid.value))
+        dut._log.info(" T output: "+str(dut.T_output_data.value))
+        dut._log.info(" E data: "+str(dut.E_input_data.value))
+        #dut._log.info(" E write address: "+str(dut.E_write_address.value))
         await ClockCycles(dut.clk_in,1)
 
     """
@@ -77,17 +94,17 @@ def is_runner():
     sys.path.append(str(proj_path / "sim" / "model"))
     filenamehere = TAG+".sv"
     sources = [proj_path / "hdl" / filenamehere]
-    sources += [proj_path / "hdl" / "CosineLookup.v"]
+    sources += [proj_path / "hdl" / "CosineLookup.sv"]
     sources += [proj_path / "hdl" / "Multiply_Real.v"]
+    sources += [proj_path / "hdl" / "Multiply_Real_extrashift.v"]
     sources += [proj_path / "hdl" / "Emin.sv"]
     sources += [proj_path / "hdl" / "T.sv"]
     sources += [proj_path / "hdl" / "F.sv"]
     sources += [proj_path / "hdl" / "phi.sv"]
-    sources += [proj_path / "hdl" / "divider4.sv"]
-    sources += [proj_path / "hdl" / "divider2b.sv"]
-    sources += [proj_path / "hdl" / "acos.sv"]
     sources += [proj_path / "hdl" / "xilinx_true_dual_port_read_first_1_clock_ram.v"]
-    
+    sources += [proj_path / "hdl" / "acos.sv"]
+    sources += [proj_path / "hdl" / "divider2.sv"]
+    sources += [proj_path / "hdl" / "divider3.sv"]
     
     build_test_args = []
     parameters = {}
