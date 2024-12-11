@@ -99,11 +99,14 @@ module emin #(
 	logic signed [BIT_WIDTH-1:0] b_factor [0:NUM_MULTS-1];
 	logic signed [BIT_WIDTH-1:0] mult_res [0:NUM_MULTS-1];
 
-	logic signed [BIT_WIDTH-1:0] alpha_k_num [0:1];
-	logic signed [BIT_WIDTH-1:0] beta_k_num [0:1];
+	logic signed [BIT_WIDTH-1:0] alpha_k_num;
+	logic signed [BIT_WIDTH-1:0] beta_k_num;
+	logic signed [BIT_WIDTH-1:0] alpha_k_num_pipeline;
+	logic signed [BIT_WIDTH-1:0] beta_k_num_pipeline;
 	logic signed [BIT_WIDTH-1:0] abs_alpha_k_num;
 	logic signed [BIT_WIDTH-1:0] abs_beta_k_num;
-	logic signed [BIT_WIDTH-1:0] denom[0:1];
+	logic signed [BIT_WIDTH-1:0] denom;
+	logic signed [BIT_WIDTH-1:0] denom_pipeline;
 	logic signed [BIT_WIDTH-1:0] abs_alpha_k;
 	logic signed [BIT_WIDTH-1:0] abs_beta_k;
 	logic signed [BIT_WIDTH-1:0] alpha_k;
@@ -172,21 +175,21 @@ module emin #(
 
 	// we add another stage to the pipeline here since timing constraints
 	
-	assign alpha_k_num[0] = $signed(mult_res[0]) - $signed(mult_res[1]);
-	assign beta_k_num[0] = $signed(mult_res[4]) - $signed(mult_res[3]);
-	assign denom[0] = $signed(mult_res[2]) - $signed(mult_res[3]);
+	assign alpha_k_num = $signed(mult_res[0]) - $signed(mult_res[1]);
+	assign beta_k_num = $signed(mult_res[4]) - $signed(mult_res[3]);
+	assign denom = $signed(mult_res[2]) - $signed(mult_res[3]);
 
 	always_ff @(posedge clk_in) begin
-		alpha_k_num[1] <= alpha_k_num[0];
-		beta_k_num[1] <= beta_k_num[0];
-		denom[1] <= denom[0];
+		alpha_k_num_pipeline <= alpha_k_num;
+		beta_k_num_pipeline <= beta_k_num;
+		denom_pipeline <= denom;
 	end
 
-	assign abs_alpha_k_num = (alpha_k_num[1][31]) ? $signed(-$signed(alpha_k_num[1])) : $signed(alpha_k_num[1]);
-	assign abs_beta_k_num = (beta_k_num[1][31]) ? $signed(-$signed(beta_k_num[1])) : $signed(beta_k_num[1]);
+	assign abs_alpha_k_num = (alpha_k_num_pipeline[31]) ? $signed(-$signed(alpha_k_num_pipeline)) : $signed(alpha_k_num_pipeline);
+	assign abs_beta_k_num = (beta_k_num_pipeline[31]) ? $signed(-$signed(beta_k_num_pipeline)) : $signed(beta_k_num_pipeline);
 	assign dividend_a = {1'b0, abs_alpha_k_num[30:0], 32'b0};
 	assign dividend_b = {1'b0, abs_beta_k_num[30:0], 32'b0};
-	assign divisor = (denom[1]) ? {32'b0, denom[1]} : 64'b1;
+	assign divisor = (denom_pipeline) ? {32'b0, denom_pipeline} : 64'b1;
 
 	// now we calculate emin_val
 	// we need to be careful to not overflow on the arithmetic 
@@ -271,8 +274,8 @@ module emin #(
 							pipeline[stage][1] <= pipeline[stage-1][1];
 							pipeline[stage][2] <= pipeline[stage-1][2];
 							pipeline[stage][3] <= pipeline[stage-1][3];
-							sign_pipeline[stage][0] <= alpha_k_num[0][31];
-							sign_pipeline[stage][1] <= beta_k_num[0][31];
+							sign_pipeline[stage][0] <= alpha_k_num[31];
+							sign_pipeline[stage][1] <= beta_k_num[31];
 							valid_pipeline[stage] <= valid_pipeline[stage-1];
 						end
 					end

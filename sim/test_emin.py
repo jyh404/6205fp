@@ -66,7 +66,7 @@ def is_runner():
 
     sources = [proj_path / "hdl" / "Emin.sv"]
     sources += [proj_path / "hdl" / "divider3.sv"]
-    sources += [proj_path / "hdl" / "Multiply_Real.v"]
+    sources += [proj_path / "hdl" / "Multiply_Real_extrashift.v"]
     
     build_test_args = []
     parameters = {}
