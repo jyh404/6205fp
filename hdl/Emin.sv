@@ -31,13 +31,13 @@ module emin #(
 	logic [$clog2(I)-1:0] j_reg;
 	logic [1:0] delay;
 
-	parameter NUM_STAGES = 20;
+	parameter NUM_STAGES = 67;
 	logic signed [BIT_WIDTH-1:0] pipeline [0:NUM_STAGES-1][0:5];
 	// 0: 0 = j
 	// 1:
 	// 2: 1 = r(0, j-1, i), 2 = r(1, j-1, i), 3 = r(2, j-1, i)
-	// 3: 4 = alpha_k num, 5 = beta_k num
-	// 19: 4 = alpha_k, 5 = beta_k
+	// 3: 4 = alpha_k num, 5 = beta_k num, denom is sent to division
+	// 67: 4 = alpha_k, 5 = beta_k
 	// then write E_min to output
 
 	logic sign_pipeline [0:NUM_STAGES-1];
@@ -55,7 +55,7 @@ module emin #(
 	logic [2*BIT_WIDTH-1:0] divisor;
 	logic [2*BIT_WIDTH-1:0] quotient;
 
-	divider4 #(
+	divider3 #(
 		.WIDTH(2*BIT_WIDTH)
 	)
 	divider (
@@ -96,27 +96,27 @@ module emin #(
 	// 2 is stage 2 r(0) r(0)
 	// 3 is stage 2 r(1) r(1)
 	// 4 is stage 2 r(0) r(2)
-	// 5 is stage 19 r(1) alpha_k
-	// 6 is stage 19 r(2) beta_k
-	// 7 is stage 18 alpha_k_num (1/denom*sign = signed_quotient)
-	// 8 is stage 18 beta_k_num (1/denom*sign = signed_quotient)
+	// 5 is stage 66 r(1) alpha_k
+	// 6 is stage 66 r(2) beta_k
+	// 7 is stage 65 alpha_k_num (1/denom*sign = signed_quotient)
+	// 8 is stage 65 beta_k_num (1/denom*sign = signed_quotient)
 	assign a_factor[0] = pipeline[2][1];
 	assign a_factor[1] = pipeline[2][2];
 	assign a_factor[2] = pipeline[2][1];
 	assign a_factor[3] = pipeline[2][2];
 	assign a_factor[4] = pipeline[2][1];
-	assign a_factor[5] = pipeline[19][2];
-	assign a_factor[6] = pipeline[19][3];
-	assign a_factor[7] = pipeline[18][4];
-	assign a_factor[8] = pipeline[18][5];
+	assign a_factor[5] = pipeline[66][2];
+	assign a_factor[6] = pipeline[66][3];
+	assign a_factor[7] = pipeline[65][4];
+	assign a_factor[8] = pipeline[65][5];
 	
 	assign b_factor[0] = pipeline[2][2];
 	assign b_factor[1] = pipeline[2][3];
 	assign b_factor[2] = pipeline[2][1];
 	assign b_factor[3] = pipeline[2][2];
 	assign b_factor[4] = pipeline[2][3];
-	assign b_factor[5] = pipeline[19][4];
-	assign b_factor[6] = pipeline[19][5];
+	assign b_factor[5] = pipeline[66][4];
+	assign b_factor[6] = pipeline[66][5];
 	assign b_factor[7] = signed_quotient;
 	assign b_factor[8] = signed_quotient;
 
@@ -193,7 +193,7 @@ module emin #(
 						valid_pipeline[0] <= 1'b0;
 					end
 					for (integer stage = 1; stage < NUM_STAGES; ++stage) begin
-						if (stage != 2 && stage != 3 && stage != 19) begin
+						if (stage != 2 && stage != 3 && stage != 66) begin
 							// pass on value
 							// pipeline[stage] <= pipeline[stage-1]; doesn't work on cocotb
 							for (integer entry = 0; entry <= 5; ++entry) begin
@@ -223,7 +223,7 @@ module emin #(
 							valid_pipeline[stage] <= valid_pipeline[stage-1];
 							divisor <= (abs_denom) ? {32'b0, abs_denom} : 64'b1; // avoid problem with 1
 						end else begin
-							// stage == 19, form alpha_k, beta_k
+							// stage == 66, form alpha_k, beta_k
 							pipeline[stage][0] <= pipeline[stage-1][0];
 							pipeline[stage][1] <= pipeline[stage-1][1];
 							pipeline[stage][2] <= pipeline[stage-1][2];

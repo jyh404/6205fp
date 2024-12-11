@@ -224,7 +224,7 @@ module phi #(
 	logic signed [2*BIT_WIDTH-1:0] quotient,remainder;
 	
 	//Using a more efficient but blocking divider module.
-	divider2b #(
+	divider2 #(
 		.WIDTH(2*BIT_WIDTH)
 	)thanks_joe(
 		.clk_in(clk_in),

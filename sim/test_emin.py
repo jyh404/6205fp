@@ -65,7 +65,7 @@ def is_runner():
     sys.path.append(str(proj_path / "sim" / "model"))
 
     sources = [proj_path / "hdl" / "Emin.sv"]
-    sources += [proj_path / "hdl" / "divider4.sv"]
+    sources += [proj_path / "hdl" / "divider3.sv"]
     sources += [proj_path / "hdl" / "Multiply_Real.v"]
     
     build_test_args = []
