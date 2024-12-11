@@ -7,6 +7,10 @@ module formant #(
 	input wire rst_in,
 	input wire fft_valid, //valid for the 160 valid data
 	input wire [BIT_WIDTH-1:0] fft_data, //is in for 160 cycles
+	output logic [BIT_WIDTH-1:0] debug_formant_T,
+	output logic [BIT_WIDTH-1:0] debug_formant_E,
+	output logic [BIT_WIDTH-1:0] debug_formant_F,
+	output logic [BIT_WIDTH-1:0] debug_formant_B,
 	output logic formant_valid,
 	output logic [BIT_WIDTH-1:0] formant_freq [0:FORMANTS-1]
 ); //this has 1million cycles to finish, sure hope it does.
@@ -20,7 +24,8 @@ module formant #(
 	logic [BIT_WIDTH-1:0] T_input_data [0:NU_VALUES-1];
 	logic T_input_data_valid;
 	logic [I_WIDTH-1:0] T_read_address;
-	logic [BIT_WIDTH-1:0] T_output_data [0:NU_VALUES-1];
+	logic [I_WIDTH-1:0] proposed_T_read_address; //for emin to get stuff.
+	logic [BIT_WIDTH-1:0] T_output_data [0:NU_VALUES-1]; //Testing the read values here... to be non-zero.
 
 	// Emin BRAM is the loss of having a segment (addr,f) for each f
 	// We could use a rolling buffer, but currently we are calculating all of Emin(x, i), then calculate all of F(k, i)
@@ -46,6 +51,13 @@ module formant #(
 	logic B_input_data_valid [0:FORMANTS-1];
 	logic [I_WIDTH-1:0] B_read_address;
 	logic [BIT_WIDTH-1:0] B_output_data [0:FORMANTS-1];
+	
+	always_ff @(posedge clk_in) begin
+		debug_formant_T <= (T_output_data[0] != 0) ? T_output_data[0] : debug_formant_T;
+		debug_formant_E <= (E_output_data[0] != 0) ? E_output_data : debug_formant_E;
+		debug_formant_F <= (F_output_data[0] != 0) ? F_output_data[0] : debug_formant_F;
+		debug_formant_B <= (B_output_data[0] != 0) ? B_output_data[0] : debug_formant_B;
+	end
 
 	generate
 		genvar i;
@@ -203,6 +215,7 @@ module formant #(
 				end
 				EMIN_CALC: begin
 					emin_input_valid <= 1'b0;
+					T_read_address <= proposed_T_read_address;
 					if (E_write_address == I - 1) begin
 						// we have written the last Emin value
 						state <= F_CALC;
@@ -299,7 +312,7 @@ module formant #(
 		.i(current_i),
 		.input_valid(emin_input_valid),
 		.T_resp(T_output_data),
-		.T_req(T_read_address),
+		.T_req(proposed_T_read_address),
 		.j_out(E_write_address),
 		.data_out(E_input_data),
 		.output_valid(E_input_data_valid)

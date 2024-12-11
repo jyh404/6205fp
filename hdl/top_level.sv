@@ -257,7 +257,7 @@ module top_level
 	logic [7:0] f_output_data_log;
 	log2bad my_bad_log2 (
 		.clk_in(clk_100mhz),
-		.log_in(f_output_data>>6), //experimentally, the smallest is 64.
+		.log_in(f_output_data),
 		.log_out(f_output_data_log)
 	);
 	
@@ -334,12 +334,21 @@ module top_level
 	
 	logic formant_out_valid;
 	logic [SAMPLE_BITS-1:0] freq_buffer [0:FORMANTS-1];
+	logic [SAMPLE_BITS-1:0] debug_formant_T;
+	logic [SAMPLE_BITS-1:0] debug_formant_E;
+	logic [SAMPLE_BITS-1:0] debug_formant_F;
+	logic [SAMPLE_BITS-1:0] debug_formant_B;
+	
 	
 	formant #(.FORMANTS(FORMANTS)) my_dp_formant
 	(.clk_in(clk_100mhz),
 	.rst_in(sys_rst),
 	.fft_valid(formant_in_valid),
 	.fft_data(formant_in_data),
+	.debug_formant_T(debug_formant_T),
+	.debug_formant_E(debug_formant_E),
+	.debug_formant_F(debug_formant_F),
+	.debug_formant_B(debug_formant_B),
 	.formant_valid(formant_out_valid),
 	.formant_freq(freq_buffer)
 	); //Probably fine to just send all frequencies to module...
@@ -360,7 +369,7 @@ module top_level
 		end
 	end */
 	
-	parameter UART_SAMPLES = 430;
+	parameter UART_SAMPLES = 420;
 	parameter CYCLES_PER_SAMPLE = 2200;
 	logic [7:0] uart_420_packets [0:UART_SAMPLES];
 	logic [9:0] uart_counter = UART_SAMPLES;
@@ -398,24 +407,40 @@ module top_level
 			for (int i=0; i<160; i=i+1) begin //Now loading the 
 				uart_420_packets[i+160] <= reordered_flipflops[i];
 			end
-			for (int i=320; i<416; i=i+1) begin
+			for (int i=320; i<390; i=i+1) begin
 				uart_420_packets[i] <= 8'h00;
 			end
-			uart_420_packets[416] <= freq_buffer[0][31:24];
-			uart_420_packets[417] <= freq_buffer[0][23:16];
-			uart_420_packets[418] <= freq_buffer[1][31:24];
-			uart_420_packets[419] <= freq_buffer[1][23:16];
-			uart_420_packets[420] <= freq_buffer[2][31:24];
-			uart_420_packets[421] <= freq_buffer[2][23:16];
-			uart_420_packets[422] <= freq_buffer[3][31:24];
-			uart_420_packets[423] <= freq_buffer[3][23:16];
-			uart_420_packets[424] <= freq_buffer[4][31:24];
-			uart_420_packets[425] <= freq_buffer[4][23:16];
+			uart_420_packets[390] <= 8'hff;
+			uart_420_packets[391] <= debug_formant_T[31:24];
+			uart_420_packets[392] <= debug_formant_T[23:16];
+			uart_420_packets[393] <= debug_formant_T[15:08];
+			uart_420_packets[394] <= debug_formant_T[07:00];
+			uart_420_packets[395] <= debug_formant_E[23:16];
+			uart_420_packets[396] <= debug_formant_E[15:08];
+			uart_420_packets[397] <= debug_formant_E[07:00];
+			uart_420_packets[398] <= debug_formant_F[31:24];
+			uart_420_packets[399] <= debug_formant_F[23:16];
+			uart_420_packets[400] <= debug_formant_F[15:08];
+			uart_420_packets[401] <= debug_formant_F[07:00];
+			uart_420_packets[402] <= debug_formant_B[31:24];
+			uart_420_packets[403] <= debug_formant_B[23:16];
+			uart_420_packets[404] <= debug_formant_B[15:08];
+			uart_420_packets[405] <= debug_formant_B[07:00];
+			uart_420_packets[406] <= freq_buffer[0][31:24];
+			uart_420_packets[407] <= freq_buffer[0][23:16];
+			uart_420_packets[408] <= freq_buffer[1][31:24];
+			uart_420_packets[409] <= freq_buffer[1][23:16];
+			uart_420_packets[410] <= freq_buffer[2][31:24];
+			uart_420_packets[411] <= freq_buffer[2][23:16];
+			uart_420_packets[412] <= freq_buffer[3][31:24];
+			uart_420_packets[413] <= freq_buffer[3][23:16];
+			uart_420_packets[414] <= freq_buffer[4][31:24];
+			uart_420_packets[415] <= freq_buffer[4][23:16];
 			
-			uart_420_packets[426] <= 8'hff;
-			uart_420_packets[427] <= 8'hff;
-			uart_420_packets[428] <= 8'hff;
-			uart_420_packets[429] <= 8'hff;
+			uart_420_packets[416] <= 8'hff;
+			uart_420_packets[417] <= 8'hff;
+			uart_420_packets[418] <= 8'hff;
+			uart_420_packets[419] <= 8'hff;
 			
 			uart_counter <= 0; //starts the output stream
 		end else

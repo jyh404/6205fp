@@ -29,7 +29,7 @@ module emin #(
 	logic signed [BIT_WIDTH-1:0] T_i [0:NU_VALUES-1];
 	logic [$clog2(I)-1:0] i_reg;
 	logic [$clog2(I)-1:0] j_reg;
-	logic delay;
+	logic [1:0] delay;
 
 	parameter NUM_STAGES = 20;
 	logic signed [BIT_WIDTH-1:0] pipeline [0:NUM_STAGES-1][0:5];
@@ -161,11 +161,11 @@ module emin #(
 						i_reg <= i;
 						T_req <= i;
 						state <= REQ_I;
-						delay <= 1'b1; // delay = 1 means 2 cycles later
-					end
+						delay <= 2'b10; // delay = 1 means 2 cycles later
+					end //delay now +1 for proposed address to move in formant.sv
 				end
 				REQ_I: begin
-					if (delay) begin
+					if (delay > 0) begin
 						delay <= delay - 1;
 					end else begin
 						// received
