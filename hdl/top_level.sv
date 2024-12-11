@@ -308,13 +308,13 @@ module top_level
 	// Formant analysis using wfft_result and wfft_valid
 	// Note that these are still fairly sus... reversed_bit or what
 	// but it's time for another file!
-	parameter FORMANTS = 1;
+	parameter FORMANTS = 5;
 	parameter FREQ_INPUTS = 160;
 	
 	logic formant_in_valid; //Keeps on for 160 cycles hopefully
 	logic [7:0] formant_valid_counter;
 	logic [31:0] formant_in_data;
-	logic [SAMPLE_BITS-1:0] freq_buffer [0:FORMANTS];
+	logic [SAMPLE_BITS-1:0] freq_buffer [0:FORMANTS-1];
 	
 	//INPUTS TO FORMANTS
 	//assign formant_in_data = f_output_data;
@@ -399,10 +399,10 @@ module top_level
 			for (int i=320; i<416; i=i+1) begin
 				uart_420_packets[i] <= 8'h00;
 			end
-			uart_420_packets[416] <= 8'hff;
-			uart_420_packets[417] <= 8'hff;
-			uart_420_packets[418] <= 8'hff;
-			uart_420_packets[419] <= 8'hff;
+			uart_420_packets[416] <= freq_buffer[0][31:24];
+			uart_420_packets[417] <= freq_buffer[1][31:24];
+			uart_420_packets[418] <= freq_buffer[2][31:24];
+			uart_420_packets[419] <= freq_buffer[3][31:24];
 			uart_counter <= 0; //starts the output stream
 		end else
 			new_uart_data_available <= 0; //stops from outputing after 420.
