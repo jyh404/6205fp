@@ -261,6 +261,7 @@ module formant #(
 					end
 				end
 				SEGMENT_CALC: begin
+					state_tracker <= 4'b100;
 					if (segment) begin
 						if (delay) begin
 							delay <= delay - 1;
