@@ -15,7 +15,7 @@ import wave
 SERIAL_PORT_NAME = "/dev/ttyUSB1"
 BAUD_RATE = 460800
 TIME_SECONDS = 3
-OUT_PER_SECOND = 42000
+OUT_PER_SECOND = 43000 #+10 for formants
 # this needs to take all fourier and audio
 # 160 audio and 256 fourier every 10 ms with some exception probably.
 # easiest to use 1/2 often.

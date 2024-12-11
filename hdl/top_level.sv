@@ -314,7 +314,8 @@ module top_level
 	logic formant_in_valid; //Keeps on for 160 cycles hopefully
 	logic [7:0] formant_valid_counter;
 	logic [31:0] formant_in_data;
-	logic [SAMPLE_BITS-1:0] freq_buffer [0:FORMANTS-1];
+	logic formant_data_valid;
+
 	
 	//INPUTS TO FORMANTS
 	//assign formant_in_data = f_output_data;
@@ -325,20 +326,21 @@ module top_level
 			formant_in_valid <= 1;
 		end else if (formant_valid_counter == FREQ_INPUTS-1) begin
 			formant_valid_counter <= 0;
+			formant_in_valid <= 0;
 		end else if (formant_valid_counter != 0) begin
 			formant_valid_counter <= formant_valid_counter + 1;
-		end else begin
-			formant_in_valid <= 0;
 		end
 	end
 	
+	logic formant_out_valid;
+	logic [SAMPLE_BITS-1:0] freq_buffer [0:FORMANTS-1];
 	
 	formant #(.FORMANTS(FORMANTS)) my_dp_formant
 	(.clk_in(clk_100mhz),
 	.rst_in(sys_rst),
 	.fft_valid(formant_in_valid),
 	.fft_data(formant_in_data),
-	.formant_valid(),
+	.formant_valid(formant_out_valid),
 	.formant_freq(freq_buffer)
 	); //Probably fine to just send all frequencies to module...
 	
@@ -358,10 +360,10 @@ module top_level
 		end
 	end */
 	
-	parameter UART_SAMPLES = 420;
+	parameter UART_SAMPLES = 430;
 	parameter CYCLES_PER_SAMPLE = 2200;
 	logic [7:0] uart_420_packets [0:UART_SAMPLES];
-	logic [9:0] uart_counter = 420;
+	logic [9:0] uart_counter = UART_SAMPLES;
 	logic [12:0] clock_cycles_per_sample = 0;
 	logic new_uart_data_available = 0;
 	logic [7:0] new_uart_data;
@@ -400,9 +402,21 @@ module top_level
 				uart_420_packets[i] <= 8'h00;
 			end
 			uart_420_packets[416] <= freq_buffer[0][31:24];
-			uart_420_packets[417] <= freq_buffer[1][31:24];
-			uart_420_packets[418] <= freq_buffer[2][31:24];
-			uart_420_packets[419] <= freq_buffer[3][31:24];
+			uart_420_packets[417] <= freq_buffer[0][23:16];
+			uart_420_packets[418] <= freq_buffer[1][31:24];
+			uart_420_packets[419] <= freq_buffer[1][23:16];
+			uart_420_packets[420] <= freq_buffer[2][31:24];
+			uart_420_packets[421] <= freq_buffer[2][23:16];
+			uart_420_packets[422] <= freq_buffer[3][31:24];
+			uart_420_packets[423] <= freq_buffer[3][23:16];
+			uart_420_packets[424] <= freq_buffer[4][31:24];
+			uart_420_packets[425] <= freq_buffer[4][23:16];
+			
+			uart_420_packets[426] <= 8'hff;
+			uart_420_packets[427] <= 8'hff;
+			uart_420_packets[428] <= 8'hff;
+			uart_420_packets[429] <= 8'hff;
+			
 			uart_counter <= 0; //starts the output stream
 		end else
 			new_uart_data_available <= 0; //stops from outputing after 420.

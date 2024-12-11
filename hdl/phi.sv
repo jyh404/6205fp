@@ -287,7 +287,7 @@ module phi #(
 				//and 31 MSB of the output.
 			end
 			53: begin
-				output_data[formant_index-1] <= acos_data;
+				output_data[formant_index-1] <= {acos_data,8'b0};
 			end
 			54: begin
 				output_valid <= (formant_index == FORMANTS) ? 1 : 0;
