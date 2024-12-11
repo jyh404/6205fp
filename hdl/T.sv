@@ -51,19 +51,20 @@ module T #(
 
 	//1 clock cycle for time safety.
 	logic [BIT_WIDTH-1:0] temp_partial_1;
-	Multiply_re #(.WIDTH(BIT_WIDTH)) cos_mult_1(
-		.a_re(fft_data_buffer<<SCALE),
-		.b_re(cosine_value[1]),
-		.m_re(temp_partial_1)
+	Multiply_re #(.WIDTH(BIT_WIDTH-8)) cos_mult_1(
+		.a_re(fft_data_buffer[BIT_WIDTH-1-SCALE:8-SCALE]),
+		.b_re(cosine_value[1][BIT_WIDTH-1:8]),
+		.m_re(temp_partial_1[BIT_WIDTH-1:8])
 	);
+	assign temp_partial_1[7:0] = 0;
 	
 	logic [BIT_WIDTH-1:0] temp_partial_2;
 	Multiply_re #(.WIDTH(BIT_WIDTH)) cos_mult_2(
-		.a_re(fft_data_buffer<<SCALE),
-		.b_re(cosine_value[2]),
-		.m_re(temp_partial_2)
+		.a_re(fft_data_buffer[BIT_WIDTH-1-SCALE:8-SCALE]),
+		.b_re(cosine_value[2][BIT_WIDTH-1:8]),
+		.m_re(temp_partial_2[BIT_WIDTH-1:8])
 	);
-
+	assign temp_partial_2[7:0] = 0;
 	
 	always_ff @(posedge clk_in) begin
 		partial_sums[0] <= temp_partial_0[62:31];

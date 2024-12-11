@@ -125,14 +125,16 @@ module emin #(
 	generate
 		genvar f;
 		for (f = 0; f < NUM_MULTS; ++f) begin
+			//precision losing
 			Multiply_re_extra_shift #(
-				.WIDTH(BIT_WIDTH)
+				.WIDTH(BIT_WIDTH-8)
 			)
 			multiplier (
-				.a_re(a_factor[f]),
-				.b_re(b_factor[f]),
-				.m_re(mult_res[f])
+				.a_re(a_factor[f][BIT_WIDTH-1:8]),
+				.b_re(b_factor[f][BIT_WIDTH-1:8]),
+				.m_re(mult_res[f][BIT_WIDTH-1:8])
 			);
+			assign mult_res[f][7:0] = 0;
 		end
 	endgenerate
 

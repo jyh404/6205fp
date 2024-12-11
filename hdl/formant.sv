@@ -353,6 +353,13 @@ module formant #(
 	logic f_output_valid;
 	logic f_begin_iter;
 	logic f_iter_done;
+	
+	always_comb begin
+		for (int i=0; i<FORMANTS; i++) begin
+			F_input_data_valid[i] = (i == k_write) ? f_output_valid : 1'b0; 	
+			B_input_data_valid[i] = (i == k_write) ? f_output_valid : 1'b0; 	
+		end
+	end
 
 	f #(
 		.BIT_WIDTH(BIT_WIDTH),

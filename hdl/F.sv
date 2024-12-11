@@ -102,7 +102,7 @@ module f #(
 							// if k_pipeline[2] == 1 otherwise, then F(k-1,j) = infinity
 							// if j_pipeline[2] == -1 otherwise, then F(k-1,j) = infinity as well
 							// so no updates should occur for both cases
-						end else if (k_pipeline[2] > 1 && j_pipeline[2] > -1 && e_prev + f_prev < cur_f) begin
+						end else if ((k_pipeline[2] > 1) && (j_pipeline[2] > -1) && (e_prev + f_prev < cur_f)) begin
 							cur_f <= e_prev + f_prev;
 							b_data <= j_pipeline[2];
 						end
