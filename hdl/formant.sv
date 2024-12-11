@@ -256,7 +256,7 @@ module formant #(
 							segment <= FORMANTS;
 							segment_values[FORMANTS] <= I - 1;
 							delay <= 2'b10;
-							B_read_address <= segment_values[FORMANTS];
+							B_read_address <= I-1;
 						end
 					end
 				end
