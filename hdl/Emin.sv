@@ -39,7 +39,7 @@ module emin #(
 	logic [$clog2(I)-1:0] j_reg;
 	logic [1:0] delay;
 
-	parameter NUM_STAGES = 69;
+	parameter NUM_STAGES = 70;
 	logic signed [BIT_WIDTH-1:0] pipeline [0:NUM_STAGES-1][0:3];
 	logic sign_pipeline[0:NUM_STAGES-1][0:2];
 	// 0: 0 = j
@@ -100,20 +100,6 @@ module emin #(
 	logic signed [BIT_WIDTH-1:0] b_factor [0:NUM_MULTS-1];
 	logic signed [BIT_WIDTH-1:0] mult_res [0:NUM_MULTS-1];
 
-	logic signed [BIT_WIDTH-1:0] alpha_k_num;
-	logic signed [BIT_WIDTH-1:0] beta_k_num;
-	logic signed [BIT_WIDTH-1:0] alpha_k_num_pipeline;
-	logic signed [BIT_WIDTH-1:0] beta_k_num_pipeline;
-	logic signed [BIT_WIDTH-1:0] abs_alpha_k_num;
-	logic signed [BIT_WIDTH-1:0] abs_beta_k_num;
-	logic signed [BIT_WIDTH-1:0] denom;
-	logic signed [BIT_WIDTH-1:0] denom_pipeline;
-	logic signed [BIT_WIDTH-1:0] abs_alpha_k;
-	logic signed [BIT_WIDTH-1:0] abs_beta_k;
-	logic signed [BIT_WIDTH-1:0] alpha_k;
-	logic signed [BIT_WIDTH-1:0] beta_k;
-	logic signed [BIT_WIDTH-1:0] emin_val;
-
 	// for purposes of visualizing on gtkwave
 	logic signed [BIT_WIDTH-1:0] afactor0;
 	logic signed [BIT_WIDTH-1:0] bfactor0;
@@ -157,16 +143,16 @@ module emin #(
 	assign a_factor[2] = pipeline[2][1];
 	assign a_factor[3] = pipeline[2][2];
 	assign a_factor[4] = pipeline[2][1];
-	assign a_factor[5] = pipeline[68][2];
-	assign a_factor[6] = pipeline[68][3];
+	assign a_factor[5] = pipeline[69][2];
+	assign a_factor[6] = pipeline[69][3];
 	
 	assign b_factor[0] = pipeline[2][2];
 	assign b_factor[1] = pipeline[2][3];
 	assign b_factor[2] = pipeline[2][1];
 	assign b_factor[3] = pipeline[2][2];
 	assign b_factor[4] = pipeline[2][3];
-	assign b_factor[5] = alpha_k;
-	assign b_factor[6] = beta_k;
+	assign b_factor[5] = alpha_k_pipeline;
+	assign b_factor[6] = beta_k_pipeline;
 
 	// we are guaranteed (empirically) that alpha_k, beta_k are between -2 and 2
 	// given non-shifted values of num and denom
@@ -175,6 +161,22 @@ module emin #(
 	// we are also guaranteed denom is positive: r(0) is largest in absolute value compared to r(1), r(2)
 
 	// we add another stage to the pipeline here since timing constraints
+
+	logic signed [BIT_WIDTH-1:0] alpha_k_num;
+	logic signed [BIT_WIDTH-1:0] beta_k_num;
+	logic signed [BIT_WIDTH-1:0] alpha_k_num_pipeline;
+	logic signed [BIT_WIDTH-1:0] beta_k_num_pipeline;
+	logic signed [BIT_WIDTH-1:0] abs_alpha_k_num;
+	logic signed [BIT_WIDTH-1:0] abs_beta_k_num;
+	logic signed [BIT_WIDTH-1:0] denom;
+	logic signed [BIT_WIDTH-1:0] denom_pipeline;
+	logic signed [BIT_WIDTH-1:0] abs_alpha_k;
+	logic signed [BIT_WIDTH-1:0] abs_beta_k;
+	logic signed [BIT_WIDTH-1:0] alpha_k;
+	logic signed [BIT_WIDTH-1:0] beta_k;
+	logic signed [BIT_WIDTH-1:0] alpha_k_pipeline;
+	logic signed [BIT_WIDTH-1:0] beta_k_pipeline;
+	logic signed [BIT_WIDTH-1:0] emin_val;
 	
 	assign alpha_k_num = $signed(mult_res[0]) - $signed(mult_res[1]);
 	assign beta_k_num = $signed(mult_res[4]) - $signed(mult_res[3]);
@@ -198,7 +200,11 @@ module emin #(
 	assign abs_beta_k = $signed({1'b0, quotient_b[32:2]}); 
 	assign alpha_k = (sign_pipeline[68][0]) ? $signed(-abs_alpha_k) : $signed(abs_alpha_k);
 	assign beta_k = (sign_pipeline[68][1]) ? $signed(-abs_beta_k) : $signed(abs_beta_k);
-	assign emin_val = ($signed(pipeline[68][1]) >>> 2) - $signed(mult_res[5]) - $signed(mult_res[6]);
+	always_ff @(posedge clk_in) begin
+		alpha_k_pipeline <= alpha_k;
+		beta_k_pipeline <= beta_k;
+	end
+	assign emin_val = ($signed(pipeline[69][1]) >>> 2) - $signed(mult_res[5]) - $signed(mult_res[6]);
 	
 	always_ff @(posedge clk_in) begin
 		if (rst_in) begin
