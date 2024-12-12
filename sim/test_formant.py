@@ -119,8 +119,6 @@ async def test_a(dut):
         #print("-----------------------1 CLOCK CYCLE-----------------------")
         await ClockCycles(dut.clk_in,1)
         which_state = dut.state_tracker.value
-        
-
 
 
     """
