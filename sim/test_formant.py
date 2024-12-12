@@ -113,8 +113,11 @@ async def test_a(dut):
         dut._log.info(" debug_to_acos " + str(dut.debug_to_acos.value))
         if dut.phi_output_valid.value == 1:
             dut._log.info(" output_valid " + str(dut.phi_output_valid.value))
-            dut._log.info(" output_data " + str(dut.phi_output.value))
-            dut._log.info(" formant 1 " + str(int(str(dut.phi_output.value)[-1:-31], 2)))
+            dut._log.info(" formant 1" + str(dut.phi_output_1.value))
+            dut._log.info(" formant 2" + str(dut.phi_output_2.value))
+            dut._log.info(" formant 3" + str(dut.phi_output_3.value))
+            dut._log.info(" formant 4" + str(dut.phi_output_4.value))
+            dut._log.info(" formant 5" + str(dut.phi_output_5.value))
             break
         #print("-----------------------1 CLOCK CYCLE-----------------------")
         await ClockCycles(dut.clk_in,1)

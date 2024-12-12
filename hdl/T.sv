@@ -25,15 +25,6 @@ module T #(
 	logic [8:0] counter_indx_buffer [0:1];
 	logic [BIT_WIDTH-1:0] fft_data_buffer; //for reasons.
 	logic fft_valid_buffer [0:1];
-	//assign cosine_value[0] = 1<<(BIT_WIDTH-8);
-
-	// for gtkwave visual
-	logic signed [BIT_WIDTH-1:0] cosine_value_0;
-	logic signed [BIT_WIDTH-1:0] cosine_value_1;
-	logic signed [BIT_WIDTH-1:0] cosine_value_2;
-	assign cosine_value_0 = cosine_value[0];
-	assign cosine_value_1 = cosine_value[1];
-	assign cosine_value_2 = cosine_value[2];
 	
 	//Counter and buffers
 	always_ff @(posedge clk_in) begin
@@ -91,14 +82,14 @@ module T #(
 		counter_indx_buffer[1] <= counter_indx_buffer[0];
 		// All of these should be realigned.
 		
-		output_written_0 <= (fft_valid_buffer[1] == 1'b1) ? running_sums[0] + partial_sums[0] : 0;
-		output_written_1 <= (fft_valid_buffer[1] == 1'b1) ? running_sums[1] + partial_sums[1] : 0;
-		output_written_2 <= (fft_valid_buffer[1] == 1'b1) ? running_sums[2] + partial_sums[2] : 0;
+		output_written_0 <= (fft_valid_buffer[1] == 1'b1) ? $signed(running_sums[0]) + $signed(partial_sums[0]) : 0;
+		output_written_1 <= (fft_valid_buffer[1] == 1'b1) ? $signed(running_sums[1]) + $signed(partial_sums[1]) : 0;
+		output_written_2 <= (fft_valid_buffer[1] == 1'b1) ? $signed(running_sums[2]) + $signed(partial_sums[2]) : 0;
 		output_address <= counter_indx_buffer[1];
 		output_valid <= fft_valid_buffer[1];
 		
 		for (int i=0; i<NU_VALUES; i++) begin
-			running_sums[i] <= (fft_valid_buffer[1] == 1'b1) ? running_sums[i] + partial_sums[i] : 0;
+			running_sums[i] <= (fft_valid_buffer[1] == 1'b1) ? $signed(running_sums[i]) + $signed(partial_sums[i]) : 0;
 		end
 		
 	end

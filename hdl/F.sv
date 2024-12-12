@@ -71,7 +71,7 @@ module f #(
 					// but easier to pause and separate CALC and F step
 					cur_f <= 32'h7FFFFFFF; // largest positive signed
 					state <= CALC;
-					j_pipeline[0] <= k_req - 2;
+					j_pipeline[0] <= $signed({1'b0, k_req}) - $signed(2);
 					k_pipeline[0] <= k_req;
 					valid_pipeline[0] <= 1'b1;
 					output_valid <= 1'b0;
@@ -96,15 +96,15 @@ module f #(
 					if (valid_pipeline[2]) begin
 						if (j_pipeline[2] == -1 && k_pipeline[2] == 1) begin
 							// case of F(0, -1)
-							if (e_prev < cur_f) begin
+							if ($signed(e_prev) < cur_f) begin
 								cur_f <= e_prev;
 								b_data <= j_pipeline[2];
 							end
 							// if k_pipeline[2] == 1 otherwise, then F(k-1,j) = infinity
 							// if j_pipeline[2] == -1 otherwise, then F(k-1,j) = infinity as well
 							// so no updates should occur for both cases
-						end else if ((k_pipeline[2] > 1) && (j_pipeline[2] > -1) && (e_prev + f_prev < cur_f)) begin
-							cur_f <= e_prev + f_prev;
+						end else if ((k_pipeline[2] > 1) && ($signed(j_pipeline[2]) > -1) && ($signed(e_prev) + $signed(f_prev) < $signed(cur_f))) begin
+							cur_f <= $signed(e_prev) + $signed(f_prev);
 							b_data <= j_pipeline[2];
 						end
 					end

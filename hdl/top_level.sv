@@ -14,11 +14,11 @@ module top_level
    output logic        spkl, spkr, // left and right channels of line out port
    input wire          cipo, // SPI controller-in peripheral-out
    output logic        copi, dclk, cs, // SPI controller output signals
-	input wire 				 uart_rxd, // UART computer-FPGA
-	output logic 			 uart_txd // UART FPGA-computer
-    // output logic [2:0] hdmi_tx_p, //hdmi output signals (positives) (blue, green, red)
-    // output logic [2:0] hdmi_tx_n, //hdmi output signals (negatives) (blue, green, red)
-    // output logic hdmi_clk_p, hdmi_clk_n //differential hdmi clock
+	// input wire 				 uart_rxd, // UART computer-FPGA
+	// output logic 			 uart_txd // UART FPGA-computer
+    output logic [2:0] hdmi_tx_p, //hdmi output signals (positives) (blue, green, red)
+    output logic [2:0] hdmi_tx_n, //hdmi output signals (negatives) (blue, green, red)
+    output logic hdmi_clk_p, hdmi_clk_n //differential hdmi clock
    );
 
    //shut up those rgb LEDs for now (active high):
@@ -38,7 +38,7 @@ module top_level
    logic               spi_trigger;
 
    counter counter_16khz_trigger
-     (.clk_in(clk_100mhz),
+     (.clk_in(clk_pixel),
       .rst_in(sys_rst),
       .period_in(CYCLES_PER_TRIGGER),
       .count_out(trigger_count));
@@ -67,7 +67,7 @@ module top_level
   #(   .DATA_WIDTH(ADC_DATA_WIDTH),
        .DATA_CLK_PERIOD(ADC_DATA_CLK_PERIOD)
    )my_spi_con
-   ( .clk_in(clk_100mhz),
+   ( .clk_in(clk_pixel),
      .rst_in(sys_rst),
      .data_in(spi_write_data),
      .trigger_in(spi_trigger),
@@ -119,7 +119,7 @@ module top_level
 	logic start_reinsertion = 0;
 
 
-   always_ff @(posedge clk_100mhz) begin
+   always_ff @(posedge clk_pixel) begin
 	 if(spi_read_data_valid) begin //every sample.
 		//CHANGE WHEN BIT LENGTH CHANGES
 	   audio_sample <= {spi_read_data[9:0],22'b0}; //9:0 is needed to take the data parts of spi_read_data
@@ -179,7 +179,7 @@ module top_level
 	// HERE WE GO
     windowed_fft #(.BIT_WIDTH(SAMPLE_BITS))
 	my_windowed_fft
-	(.clk_in(clk_100mhz),
+	(.clk_in(clk_pixel),
 	.rst_in(sys_rst),
 	.start(wfft_input_valid),
 	.input_sample(audio_pc_buffer[WINDOW_SIZE-1]),
@@ -200,7 +200,7 @@ module top_level
 	) 
 	fft_bram
 	(
-		.clka(clk_100mhz),     // Clock
+		.clka(clk_pixel),     // Clock
 		//writing port:
 		.addra(f_write_address),   // Port A address bus,
 		.dina(f_input_data),     // Port A RAM input data
@@ -222,7 +222,7 @@ module top_level
 	logic wfft_valid_prev;
 	logic [8:0] wfft_counter;
 	logic fft_bram_all_ready [0:2]; //Only read when this flares.
-	always_ff @(posedge clk_100mhz) begin
+	always_ff @(posedge clk_pixel) begin
 		wfft_valid_prev <= wfft_valid;
 		if (wfft_valid && !wfft_valid_prev) begin
 			wfft_counter <= 1;
@@ -235,7 +235,7 @@ module top_level
 	end
 	
 	//writing module
-	always_ff @(posedge clk_100mhz) begin
+	always_ff @(posedge clk_pixel) begin
 		f_input_data_valid <= (wfft_valid && wfft_counter[0] == 1'b0);
 		f_input_data <= wfft_result;
 		f_write_address <= {wfft_counter[1],wfft_counter[2],wfft_counter[3],
@@ -246,7 +246,7 @@ module top_level
 	//reading module, testing here.
 	logic [7:0] reordering_counter;
 	assign f_read_address = reordering_counter;
-	always_ff @(posedge clk_100mhz) begin
+	always_ff @(posedge clk_pixel) begin
 		if (fft_bram_all_ready[0] == 1'b1) begin //this is a flare signal
 			reordering_counter <= 8'h01;
 		end else if (reordering_counter != 8'h00) begin
@@ -259,7 +259,7 @@ module top_level
 	//1 cycle delay
 	logic [7:0] f_output_data_log;
 	log2bad my_bad_log2 (
-		.clk_in(clk_100mhz),
+		.clk_in(clk_pixel),
 		.log_in(f_output_data),
 		.log_out(f_output_data_log)
 	);
@@ -268,7 +268,7 @@ module top_level
 	logic [7:0] reordering_counter_buffer [0:2]; //2 for BRAM, 1 for log2bad
 	logic [7:0] reordered_counter;
 	logic [7:0] reordered_flipflops [0:256];
-	always_ff @(posedge clk_100mhz) begin
+	always_ff @(posedge clk_pixel) begin
 		reordering_valid_buffer[1] <= fft_bram_all_ready[0];
 		reordering_valid_buffer[0] <= reordering_valid_buffer[1];
 		reordering_counter_buffer[2] <= reordering_counter;
@@ -293,7 +293,7 @@ module top_level
 		counter_coeff[6],counter_coeff[7],counter_coeff[8]};
 	logic all_coeff_ordered = 0;
 	
-	always_ff @(posedge clk_100mhz) begin
+	always_ff @(posedge clk_pixel) begin
 		if (wfft_valid) begin //I skill issued here, seek to fix this if i revert.
 			counter_coeff <= 1;
 			reordered_coeff[0] <= wfft_result;
@@ -325,7 +325,7 @@ module top_level
 	
 	//INPUTS TO FORMANTS
 	//assign formant_in_data = f_output_data;
-	always_ff @(posedge clk_100mhz) begin
+	always_ff @(posedge clk_pixel) begin
 		formant_in_data <= f_output_data;
 		if (reordering_valid_buffer[0]) begin //2 cycle delay given here
 			formant_valid_counter <= 1;
@@ -350,7 +350,7 @@ module top_level
 		.FORMANTS(FORMANTS)
 	) 
 	my_dp_formant
-	(.clk_in(clk_100mhz),
+	(.clk_in(clk_pixel),
 	.rst_in(sys_rst),
 	.fft_valid(formant_in_valid),
 	.fft_data(formant_in_data),
@@ -368,7 +368,7 @@ module top_level
 	logic [7:0] wfft_data;
 	logic [7:0] wfft_result_buffer [0:512]; //this stores the fourier coeffs
 	logic [9:0] wfft_data_counter;
-	always_ff @(posedge clk_100mhz) begin
+	always_ff @(posedge clk_pixel) begin
 		if (wfft_valid) begin
 			//changing which bits of the fourier coeff we extract...
 			wfft_result_buffer[0] <= wfft_result[SAMPLE_BITS-1:SAMPLE_BITS-8];
@@ -386,7 +386,7 @@ module top_level
 	logic new_uart_data_available = 0;
 	logic [7:0] new_uart_data;
 	// we use fft_start as a flare every 10ms to denote extraction.
-	always_ff @(posedge clk_100mhz) begin
+	always_ff @(posedge clk_pixel) begin
 		if (uart_counter<UART_SAMPLES) begin
 			//output stream has been setup
 			//uart 8bits every CYCLES_PER_SAMPLE cycles.
@@ -460,7 +460,7 @@ module top_level
    // Data Buffer SPI-UART
    logic                      audio_sample_waiting;
    
-   always_ff @(posedge clk_100mhz) begin
+   always_ff @(posedge clk_pixel) begin
 	 if (sys_rst) audio_sample_waiting <= 0;
      //else if (spi_read_data_valid) audio_sample_waiting <= 1; //How we get data in rn
 	 else if (new_uart_data_available) audio_sample_waiting <= 1; //use logic to get each sample
@@ -471,7 +471,7 @@ module top_level
    logic                      uart_data_valid;
    logic                      uart_busy;
    
-   always_ff @(posedge clk_100mhz) begin
+   always_ff @(posedge clk_pixel) begin
      if (sys_rst) begin 
 	   uart_data_in <= 0;
       end else if (sw[0]==0) begin 
@@ -489,7 +489,7 @@ module top_level
    
    uart_transmit #(.BAUD_RATE(460800)) my_uart_transmitter
    (
-    .clk_in(clk_100mhz),
+    .clk_in(clk_pixel),
     .rst_in(sys_rst),
     .data_byte_in(uart_data_in),
     .trigger_in(uart_data_valid),
@@ -517,7 +517,7 @@ module top_level
 	// // we need this to be at least 625, note that we need to flip since
 	// // row 0 is at the top of the screen
 	// localparam MAX_HEIGHT = 700; 
-	// always_ff @(posedge clk_100mhz) begin
+	// always_ff @(posedge clk_pixel) begin
 	// 	if (formant_out_valid) begin
 	// 		for (int row = 0; row < FRAME_HEIGHT; ++row) begin
 	// 			if (row == MAX_HEIGHT - (freq_buffer[0][28:19])) begin
@@ -551,7 +551,7 @@ module top_level
 	// ) 
 	// fbram
 	// (
-	// 	.clka(clk_100mhz),     // Clock
+	// 	.clka(clk_pixel),     // Clock
 	// 	//writing port:
 	// 	.addra(fbram_write_address),   // Port A address bus,
 	// 	.dina(fbram_input_data),     // Port A RAM input data
@@ -623,7 +623,7 @@ module top_level
 	// logic [$clog2(FRAME_WIDTH / DATA_LEN)-1:0] col_index_pipeline [0:1];
 
 	// // for BRAM waiting
-	// always_ff @(posedge clk_100mhz) begin
+	// always_ff @(posedge clk_pixel) begin
 	// 	col_index_pipeline[0] <= col_index;
 	// 	col_index_pipeline[1] <= col_index_pipeline[0];
 	// end
@@ -635,7 +635,7 @@ module top_level
 	// 	blue = (row_data[hcount>>3][hcount[2:0]]) ? 8'hff : 8'h00;
 	// end
 
-	// always_ff @(posedge clk_100mhz) begin
+	// always_ff @(posedge clk_pixel) begin
 	// 	if (sys_rst) begin
 	// 		state <= WAIT_DRAW;
 	// 		col_offset <= 0;
@@ -645,7 +645,7 @@ module top_level
 	// 		case (state) 
 	// 			WAIT_DRAW: begin
 	// 				fbram_input_data_valid <= 1'b0;
-	// 				if (hcount == 0) begin
+	// 				if (active_draw) begin
 	// 					state <= DRAW;
 	// 				end
 	// 			end
@@ -693,14 +693,14 @@ module top_level
 	// 				// once we draw, zero out
 	// 				// when done, go to WAIT_DRAW
 	// 				if (row_index < FRAME_HEIGHT) begin
-	// 					fbram_write_address <= (FRAME_HEIGHT / DATA_LEN) * row_index + col_offset;
+	// 					fbram_write_address <= (FRAME_WIDTH / DATA_LEN) * row_index + col_offset;
 	// 					fbram_input_data <= formant_graph[row_index];
 	// 					fbram_input_data_valid <= 1'b1;
 	// 					row_index <= row_index + 1;
 	// 				end else begin
 	// 					state <= WAIT_DRAW;
 	// 					fbram_input_data_valid <= 1'b0;
-	// 					if (col_offset == (FRAME_HEIGHT / DATA_LEN) - 1) begin
+	// 					if (col_offset == (FRAME_WIDTH / DATA_LEN) - 1) begin
 	// 						col_offset <= 0;
 	// 					end else begin
 	// 						col_offset <= col_offset + 1;

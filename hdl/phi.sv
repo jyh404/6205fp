@@ -39,7 +39,6 @@ module phi #(
 	logic [$clog2(FORMANTS)-1:0] T_vals_seen = 0;
 	logic all_seen = 0;
 	
-	// records flare seen, goes into heightened alert.
 	always_ff @(posedge clk_in) begin
 		if (rst_in) begin
 			flare_seen <= 1'b0;
@@ -79,9 +78,9 @@ module phi #(
 									r_small[2] <= T_vals_storage[2][0];				
 								end else begin
 									formant_index <= formant_index + 1;
-									r_small[0] <= T_vals_storage[0][formant_index]-T_vals_storage[0][formant_index-1];
-									r_small[1] <= T_vals_storage[1][formant_index]-T_vals_storage[1][formant_index-1];
-									r_small[2] <= T_vals_storage[2][formant_index]-T_vals_storage[2][formant_index-1];
+									r_small[0] <= $signed(T_vals_storage[0][formant_index])-$signed(T_vals_storage[0][formant_index-1]);
+									r_small[1] <= $signed(T_vals_storage[1][formant_index])-$signed(T_vals_storage[1][formant_index-1]);
+									r_small[2] <= $signed(T_vals_storage[2][formant_index])-$signed(T_vals_storage[2][formant_index-1]);
 								end
 							end
 						end
