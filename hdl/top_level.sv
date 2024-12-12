@@ -14,8 +14,11 @@ module top_level
    output logic        spkl, spkr, // left and right channels of line out port
    input wire          cipo, // SPI controller-in peripheral-out
    output logic        copi, dclk, cs, // SPI controller output signals
-	 input wire 				 uart_rxd, // UART computer-FPGA
-	 output logic 			 uart_txd // UART FPGA-computer
+	input wire 				 uart_rxd, // UART computer-FPGA
+	output logic 			 uart_txd // UART FPGA-computer
+    // output logic [2:0] hdmi_tx_p, //hdmi output signals (positives) (blue, green, red)
+    // output logic [2:0] hdmi_tx_n, //hdmi output signals (negatives) (blue, green, red)
+    // output logic hdmi_clk_p, hdmi_clk_n //differential hdmi clock
    );
 
    //shut up those rgb LEDs for now (active high):
@@ -433,16 +436,16 @@ module top_level
 			uart_420_packets[403] <= debug_formant_B[23:16];
 			uart_420_packets[404] <= debug_formant_B[15:8];
 			uart_420_packets[405] <= debug_formant_B[7:0];
-			uart_420_packets[406] <= freq_buffer[0][15:8];
-			uart_420_packets[407] <= freq_buffer[0][7:0];
-			uart_420_packets[408] <= freq_buffer[1][15:8];
-			uart_420_packets[409] <= freq_buffer[1][7:0];
-			uart_420_packets[410] <= freq_buffer[2][15:8];
-			uart_420_packets[411] <= freq_buffer[2][7:0];
-			uart_420_packets[412] <= freq_buffer[3][15:8];
-			uart_420_packets[413] <= freq_buffer[3][7:0];
-			uart_420_packets[414] <= freq_buffer[4][15:8];
-			uart_420_packets[415] <= freq_buffer[4][7:0];
+			uart_420_packets[406] <= freq_buffer[0][31:24];
+			uart_420_packets[407] <= freq_buffer[0][23:16];
+			uart_420_packets[408] <= freq_buffer[1][31:24];
+			uart_420_packets[409] <= freq_buffer[1][23:16];
+			uart_420_packets[410] <= freq_buffer[2][31:24];
+			uart_420_packets[411] <= freq_buffer[2][23:16];
+			uart_420_packets[412] <= freq_buffer[3][31:24];
+			uart_420_packets[413] <= freq_buffer[3][23:16];
+			uart_420_packets[414] <= freq_buffer[4][31:24];
+			uart_420_packets[415] <= freq_buffer[4][23:16];
 			
 			uart_420_packets[416] <= 8'hff;
 			uart_420_packets[417] <= 8'hff;
@@ -517,15 +520,15 @@ module top_level
 	// always_ff @(posedge clk_100mhz) begin
 	// 	if (formant_out_valid) begin
 	// 		for (int row = 0; row < FRAME_HEIGHT; ++row) begin
-	// 			if (row == MAX_HEIGHT - (freq_buffer[0] >>> 3)) begin
+	// 			if (row == MAX_HEIGHT - (freq_buffer[0][28:19])) begin
 	// 				formant_graph[row] <= 8'hff;
-	// 			end else if (row == MAX_HEIGHT - (freq_buffer[1] >>> 3)) begin
+	// 			end else if (row == MAX_HEIGHT - (freq_buffer[1][28:19])) begin
 	// 				formant_graph[row] <= 8'hff;
-	// 			end else if (row == MAX_HEIGHT - (freq_buffer[2] >>> 3)) begin
+	// 			end else if (row == MAX_HEIGHT - (freq_buffer[2][28:19])) begin
 	// 				formant_graph[row] <= 8'hff;
-	// 			end else if (row == MAX_HEIGHT - (freq_buffer[3] >>> 3)) begin
+	// 			end else if (row == MAX_HEIGHT - (freq_buffer[3][28:19])) begin
 	// 				formant_graph[row] <= 8'hff;
-	// 			end else if (row == MAX_HEIGHT - (freq_buffer[4] >>> 3)) begin
+	// 			end else if (row == MAX_HEIGHT - (freq_buffer[4][28:19])) begin
 	// 				formant_graph[row] <= 8'hff;
 	// 			end else begin
 	// 				formant_graph[row] <= 8'h00;
@@ -673,12 +676,8 @@ module top_level
 	// 					end 
 	// 				end
 	// 				col_index <= col_index + 1;
-	// 				if (col_index_pipeline[1] <= FRAME_WIDTH / DATA_LEN - 1) begin
-	// 					for (int col = 0; col < FRAME_WIDTH / DATA_LEN; col++) begin
-	// 						if (col == col_index_pipeline[1]) begin
-	// 							row_data[col] <= fbram_output_data;
-	// 						end
-	// 					end
+	// 				if (col_index_pipeline[1] < FRAME_WIDTH / DATA_LEN) begin
+	// 					row_data[col_index_pipeline[1]] <= fbram_output_data;
 	// 					if (col_index_pipeline[1] == FRAME_WIDTH / DATA_LEN - 1) begin
 	// 						if (vcount < FRAME_HEIGHT - 1) begin
 	// 							state <= WAIT_DRAW;

@@ -1,8 +1,8 @@
 Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
 ---------------------------------------------------------------------------------------------------------------------------------------------
 | Tool Version : Vivado v.2024.1 (lin64) Build 5076996 Wed May 22 18:36:09 MDT 2024
-| Date         : Tue Nov 26 14:46:24 2024
-| Host         : eecs-digital-10 running 64-bit Ubuntu 24.04.1 LTS
+| Date         : Wed Dec 11 21:52:32 2024
+| Host         : eecs-digital-42 running 64-bit Ubuntu 24.04.1 LTS
 | Command      : report_drc -file obj/post_imp_drc.rpt
 | Design       : top_level
 | Device       : xc7s50csga324-1
@@ -24,13 +24,13 @@ Table of Contents
       Design limits: <entire design considered>
            Ruledeck: default
              Max violations: <unlimited>
-             Violations found: 26
+             Violations found: 29
 +-----------+----------+-----------------------------------------------------+------------+
 | Rule      | Severity | Description                                         | Violations |
 +-----------+----------+-----------------------------------------------------+------------+
 | CFGBVS-1  | Warning  | Missing CFGBVS and CONFIG_VOLTAGE Design Properties | 1          |
 | CHECK-3   | Warning  | Report rule limit reached                           | 1          |
-| DPIP-1    | Warning  | Input pipelining                                    | 4          |
+| DPIP-1    | Warning  | Input pipelining                                    | 7          |
 | REQP-1839 | Warning  | RAMB36 async control check                          | 20         |
 +-----------+----------+-----------------------------------------------------+------------+
 
@@ -56,22 +56,37 @@ Related violations: <none>
 
 DPIP-1#1 Warning
 Input pipelining  
-DSP my_windowed_fft/im_square/arbr__0 input my_windowed_fft/im_square/arbr__0/A[29:0] is not pipelined. Pipelining DSP48 input will improve performance.
+DSP my_dp_formant/phi_func/acos_calc/mult_min/arbr input my_dp_formant/phi_func/acos_calc/mult_min/arbr/A[29:0] is not pipelined. Pipelining DSP48 input will improve performance.
 Related violations: <none>
 
 DPIP-1#2 Warning
 Input pipelining  
-DSP my_windowed_fft/im_square/arbr__0 input my_windowed_fft/im_square/arbr__0/B[17:0] is not pipelined. Pipelining DSP48 input will improve performance.
+DSP my_dp_formant/phi_func/phi_multiplier/arbr__2 input my_dp_formant/phi_func/phi_multiplier/arbr__2/A[29:0] is not pipelined. Pipelining DSP48 input will improve performance.
 Related violations: <none>
 
 DPIP-1#3 Warning
 Input pipelining  
-DSP my_windowed_fft/re_square/arbr__0 input my_windowed_fft/re_square/arbr__0/A[29:0] is not pipelined. Pipelining DSP48 input will improve performance.
+DSP my_dp_formant/phi_func/phi_multiplier/arbr__2 input my_dp_formant/phi_func/phi_multiplier/arbr__2/B[17:0] is not pipelined. Pipelining DSP48 input will improve performance.
 Related violations: <none>
 
 DPIP-1#4 Warning
 Input pipelining  
-DSP my_windowed_fft/re_square/arbr__0 input my_windowed_fft/re_square/arbr__0/B[17:0] is not pipelined. Pipelining DSP48 input will improve performance.
+DSP my_windowed_fft/FFT_512/SU2/MU/aibr__0 input my_windowed_fft/FFT_512/SU2/MU/aibr__0/A[29:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-1#5 Warning
+Input pipelining  
+DSP my_windowed_fft/FFT_512/SU2/MU/arbr__0 input my_windowed_fft/FFT_512/SU2/MU/arbr__0/A[29:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-1#6 Warning
+Input pipelining  
+DSP my_windowed_fft/FFT_512/SU3/MU/aibi__0 input my_windowed_fft/FFT_512/SU3/MU/aibi__0/A[29:0] is not pipelined. Pipelining DSP48 input will improve performance.
+Related violations: <none>
+
+DPIP-1#7 Warning
+Input pipelining  
+DSP my_windowed_fft/FFT_512/SU3/MU/arbi__0 input my_windowed_fft/FFT_512/SU3/MU/arbi__0/A[29:0] is not pipelined. Pipelining DSP48 input will improve performance.
 Related violations: <none>
 
 REQP-1839#1 Warning
@@ -166,12 +181,12 @@ Related violations: <none>
 
 REQP-1839#19 Warning
 RAMB36 async control check  
-The RAMB36E1 my_windowed_fft/FFT_512/SU1/TW/ff_im_reg has an input control pin my_windowed_fft/FFT_512/SU1/TW/ff_im_reg/ADDRARDADDR[9] (net: my_windowed_fft/FFT_512/SU1/TW/tw_addr_tc[3]) which is driven by a register (my_windowed_fft/FFT_512/SU1/bf2_count_reg[0]) that has an active asychronous set or reset. This may cause corruption of the memory contents and/or read values when the set/reset is asserted and is not analyzed by the default static timing analysis. It is suggested to eliminate the use of a set/reset to registers driving this RAMB pin or else use a synchronous reset in which the assertion of the reset is timed by default.
+The RAMB36E1 my_windowed_fft/FFT_512/SU1/TW/ff_im_reg has an input control pin my_windowed_fft/FFT_512/SU1/TW/ff_im_reg/ADDRARDADDR[9] (net: my_windowed_fft/FFT_512/SU1/TW/tw_addr_tc[3]) which is driven by a register (my_windowed_fft/FFT_512/SU1/bf2_count_reg[2]) that has an active asychronous set or reset. This may cause corruption of the memory contents and/or read values when the set/reset is asserted and is not analyzed by the default static timing analysis. It is suggested to eliminate the use of a set/reset to registers driving this RAMB pin or else use a synchronous reset in which the assertion of the reset is timed by default.
 Related violations: <none>
 
 REQP-1839#20 Warning
 RAMB36 async control check  
-The RAMB36E1 my_windowed_fft/FFT_512/SU1/TW/ff_im_reg has an input control pin my_windowed_fft/FFT_512/SU1/TW/ff_im_reg/ADDRARDADDR[9] (net: my_windowed_fft/FFT_512/SU1/TW/tw_addr_tc[3]) which is driven by a register (my_windowed_fft/FFT_512/SU1/bf2_count_reg[1]) that has an active asychronous set or reset. This may cause corruption of the memory contents and/or read values when the set/reset is asserted and is not analyzed by the default static timing analysis. It is suggested to eliminate the use of a set/reset to registers driving this RAMB pin or else use a synchronous reset in which the assertion of the reset is timed by default.
+The RAMB36E1 my_windowed_fft/FFT_512/SU1/TW/ff_im_reg has an input control pin my_windowed_fft/FFT_512/SU1/TW/ff_im_reg/ADDRARDADDR[9] (net: my_windowed_fft/FFT_512/SU1/TW/tw_addr_tc[3]) which is driven by a register (my_windowed_fft/FFT_512/SU1/bf2_count_reg[3]) that has an active asychronous set or reset. This may cause corruption of the memory contents and/or read values when the set/reset is asserted and is not analyzed by the default static timing analysis. It is suggested to eliminate the use of a set/reset to registers driving this RAMB pin or else use a synchronous reset in which the assertion of the reset is timed by default.
 Related violations: <none>
 
 

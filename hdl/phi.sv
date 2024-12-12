@@ -38,8 +38,6 @@ module phi #(
 	logic flare_seen;
 	logic [$clog2(FORMANTS)-1:0] T_vals_seen = 0;
 	logic all_seen = 0;
-
-	assign input_completed = all_seen;
 	
 	// records flare seen, goes into heightened alert.
 	always_ff @(posedge clk_in) begin
@@ -49,6 +47,7 @@ module phi #(
 		end else begin
 			case (state)
 				WAIT: begin
+					input_completed <= 1'b0;
 					if (input_start) begin
 						state <= INPUTTING;
 						T_vals_seen <= 0;	
@@ -66,6 +65,7 @@ module phi #(
 					end
 				end
 				ARITHMETIC: begin
+					input_completed <= 1'b1;
 					case (cycle_count)
 						0: begin
 							if (formant_index == FORMANTS) begin

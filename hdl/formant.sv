@@ -55,8 +55,8 @@ module formant #(
 	
 	always_ff @(posedge clk_in) begin
 		debug_formant_T <= (phi_output_valid) ? 32'hFFFFFFFF : debug_formant_T;
-		debug_formant_E <= (phi_input_start) ? 32'hFFFFFFFF : debug_formant_E;
-		debug_formant_F <= (phi_input_valid) ? 32'hFFFFFFFF : debug_formant_F;
+		debug_formant_E <= (phi_input_completed) ? 32'hFFFFFFFF : debug_formant_E;
+		debug_formant_F <= (phi_input_start) ? 32'hFFFFFFFF : debug_formant_F;
 		debug_formant_B <= (phi_input_valid) ? 32'hFFFFFFFF : debug_formant_B;
 	end
 
