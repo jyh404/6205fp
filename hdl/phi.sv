@@ -9,11 +9,17 @@ module phi #(
 	parameter MAX_FREQ = 5000
 ) ( input wire clk_in,
 	input wire rst_in,
-    input wire [0:NU_VALUES-1] [BIT_WIDTH-1:0] T_vals ,
+    input wire [BIT_WIDTH-1:0] T_vals_0,
+	input wire [BIT_WIDTH-1:0] T_vals_1,
+	input wire [BIT_WIDTH-1:0] T_vals_2,
     input wire input_start,
     input wire input_valid,
 	output logic [BIT_WIDTH-1:0] debug_to_acos,
-    output logic [0:FORMANTS-1] [BIT_WIDTH-1:0] output_data,
+    output logic [BIT_WIDTH-1:0] output_data_1,
+    output logic [BIT_WIDTH-1:0] output_data_2,
+    output logic [BIT_WIDTH-1:0] output_data_3,
+    output logic [BIT_WIDTH-1:0] output_data_4,
+    output logic [BIT_WIDTH-1:0] output_data_5,
     output logic output_valid
 );
     // assumes that segments have been calculated already
@@ -23,8 +29,6 @@ module phi #(
     // we save these T_vals locally
     // then do math with local values and output all phi values at once
 	// ok gottit thanks jonathan
-
-	
 	
 	logic [BIT_WIDTH-1:0] T_vals_storage [0:NU_VALUES-1] [0:FORMANTS-1];
 	logic flare_seen;
@@ -33,27 +37,30 @@ module phi #(
 	
 	// records flare seen, goes into heightened alert.
 	always_ff @(posedge clk_in) begin
-		if (input_start) begin
-			flare_seen <= 1;
-		end else if (T_vals_seen == FORMANTS) begin //overflowing
-			flare_seen <= 0;
-			all_seen <= 1;
+		if (rst_in) begin
+			flare_seen <= 1'b0;
+		end else begin
+			if (input_start) begin
+				flare_seen <= 1;
+				T_vals_seen <= 0;	
+			end else begin
+				if (T_vals_seen == FORMANTS) begin //overflowing
+					flare_seen <= 0;
+					all_seen <= 1;
+					T_vals_seen <= 0;
+				end else if (flare_seen) begin
+					if (input_valid) begin
+						T_vals_seen <= T_vals_seen + 1;
+						T_vals_storage[0] [T_vals_seen] <= T_vals_0;
+						T_vals_storage[1] [T_vals_seen] <= T_vals_1;
+						T_vals_storage[2] [T_vals_seen] <= T_vals_2;
+					end
+				end
+			end
 		end
 	end
 	
 	// go on heightened alert and await T_vals.
-	always_ff @(posedge clk_in) begin
-		if (flare_seen) begin
-			if (input_valid) begin
-				T_vals_seen <= T_vals_seen + 1;
-				T_vals_storage[0] [T_vals_seen] <= T_vals[0];
-				T_vals_storage[1] [T_vals_seen] <= T_vals[1];
-				T_vals_storage[2] [T_vals_seen] <= T_vals[2];
-			end else if (T_vals_seen == FORMANTS) begin
-				T_vals_seen <= 0;
-			end
-		end
-	end
 	
 	// on all_seen, analyze the given T_vals in storage
 	// we have T(0), T(1), T(2)
@@ -292,7 +299,12 @@ module phi #(
 			end
 			85: begin
 				debug_to_acos <= to_acos;
-				output_data[formant_index-1] <= {acos_data,8'b0};
+				output_data_1 <= (formant_index == 1) ? {acos_data, 8'b0} : output_data_1;
+				output_data_2 <= (formant_index == 2) ? {acos_data, 8'b0} : output_data_2;
+				output_data_3 <= (formant_index == 3) ? {acos_data, 8'b0} : output_data_3;
+				output_data_4 <= (formant_index == 4) ? {acos_data, 8'b0} : output_data_4;
+				output_data_5 <= (formant_index == 5) ? {acos_data, 8'b0} : output_data_5;
+				// output_data[formant_index-1] <= {acos_data,8'b0};
 			end
 			86: begin
 				output_valid <= (formant_index == FORMANTS) ? 1 : 0;

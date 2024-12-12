@@ -343,7 +343,10 @@ module top_level
 	logic [SAMPLE_BITS-1:0] debug_formant_B;
 	
 	
-	formant #(.FORMANTS(FORMANTS)) my_dp_formant
+	formant #(
+		.FORMANTS(FORMANTS)
+	) 
+	my_dp_formant
 	(.clk_in(clk_100mhz),
 	.rst_in(sys_rst),
 	.fft_valid(formant_in_valid),
@@ -416,30 +419,30 @@ module top_level
 			uart_420_packets[389] <= 8'hff;
 			uart_420_packets[390] <= debug_formant_T[31:24];
 			uart_420_packets[391] <= debug_formant_T[23:16];
-			uart_420_packets[392] <= debug_formant_T[15:08];
-			uart_420_packets[393] <= debug_formant_T[07:00];
+			uart_420_packets[392] <= debug_formant_T[15:8];
+			uart_420_packets[393] <= debug_formant_T[7:0];
 			uart_420_packets[394] <= debug_formant_E[31:24];
 			uart_420_packets[395] <= debug_formant_E[23:16];
-			uart_420_packets[396] <= debug_formant_E[15:08];
-			uart_420_packets[397] <= debug_formant_E[07:00];
+			uart_420_packets[396] <= debug_formant_E[15:8];
+			uart_420_packets[397] <= debug_formant_E[7:0];
 			uart_420_packets[398] <= debug_formant_F[31:24];
 			uart_420_packets[399] <= debug_formant_F[23:16];
-			uart_420_packets[400] <= debug_formant_F[15:08];
-			uart_420_packets[401] <= debug_formant_F[07:00];
+			uart_420_packets[400] <= debug_formant_F[15:8];
+			uart_420_packets[401] <= debug_formant_F[7:0];
 			uart_420_packets[402] <= debug_formant_B[31:24];
 			uart_420_packets[403] <= debug_formant_B[23:16];
-			uart_420_packets[404] <= debug_formant_B[15:08];
-			uart_420_packets[405] <= debug_formant_B[07:00];
-			uart_420_packets[406] <= freq_buffer[0][31:24];
-			uart_420_packets[407] <= freq_buffer[0][23:16];
-			uart_420_packets[408] <= freq_buffer[1][31:24];
-			uart_420_packets[409] <= freq_buffer[1][23:16];
-			uart_420_packets[410] <= freq_buffer[2][31:24];
-			uart_420_packets[411] <= freq_buffer[2][23:16];
-			uart_420_packets[412] <= freq_buffer[3][31:24];
-			uart_420_packets[413] <= freq_buffer[3][23:16];
-			uart_420_packets[414] <= freq_buffer[4][31:24];
-			uart_420_packets[415] <= freq_buffer[4][23:16];
+			uart_420_packets[404] <= debug_formant_B[15:8];
+			uart_420_packets[405] <= debug_formant_B[7:0];
+			uart_420_packets[406] <= freq_buffer[0][15:8];
+			uart_420_packets[407] <= freq_buffer[0][7:0];
+			uart_420_packets[408] <= freq_buffer[1][15:8];
+			uart_420_packets[409] <= freq_buffer[1][7:0];
+			uart_420_packets[410] <= freq_buffer[2][15:8];
+			uart_420_packets[411] <= freq_buffer[2][7:0];
+			uart_420_packets[412] <= freq_buffer[3][15:8];
+			uart_420_packets[413] <= freq_buffer[3][7:0];
+			uart_420_packets[414] <= freq_buffer[4][15:8];
+			uart_420_packets[415] <= freq_buffer[4][7:0];
 			
 			uart_420_packets[416] <= 8'hff;
 			uart_420_packets[417] <= 8'hff;

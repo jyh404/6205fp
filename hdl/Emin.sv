@@ -12,7 +12,8 @@ module emin #(
 	output logic [$clog2(I)-1:0] T_req,
 	output logic [$clog2(I)-1:0] j_out,
 	output logic [BIT_WIDTH-1:0] data_out,
-    output logic output_valid
+    output logic output_valid,
+	output logic iter_done
 );
 	// assumes all of T is computed in T_bram
 	// on first cycle of input valid: receive i
@@ -217,9 +218,11 @@ module emin #(
 				valid_pipeline[b] <= 1'b0;
 			end
 			output_valid <= 1'b0;
+			iter_done <= 1'b0;
 		end else begin
 			case (state)
 				START: begin
+					iter_done <= 1'b0;
 					output_valid <= 1'b0;
 					if (input_valid) begin
 						i_reg <= i;
@@ -292,6 +295,7 @@ module emin #(
 						output_valid <= 1'b1;
 						if (pipeline[NUM_STAGES-1][0] == i) begin // we output the last one
 							state <= START;
+							iter_done <= 1'b1;
 						end
 					end else begin
 						output_valid <= 1'b0;

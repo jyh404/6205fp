@@ -2,7 +2,8 @@ module f #(
 	parameter BIT_WIDTH = 32, 
 	parameter I = 160, 
 	parameter FORMANTS = 5
-)(	input wire clk_in,
+)
+(	input wire clk_in,
 	input wire rst_in,
 	input wire begin_iter,
 	input wire [$clog2(I)-1:0] i, // decide when to begin processing i, needs Emin to finish

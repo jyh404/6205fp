@@ -24,7 +24,7 @@ module formant #(
 	logic [BIT_WIDTH-1:0] T_input_data [0:NU_VALUES-1];
 	logic T_input_data_valid;
 	logic [I_WIDTH-1:0] T_read_address;
-	logic [0:NU_VALUES-1] [BIT_WIDTH-1:0] T_output_data ; //Testing the read values here... to be non-zero.
+	logic [BIT_WIDTH-1:0] T_output_data [0:NU_VALUES-1]; //Testing the read values here... to be non-zero.
 
 	// Emin BRAM is the loss of having a segment (addr,f) for each f
 	// We could use a rolling buffer, but currently we are calculating all of Emin(x, i), then calculate all of F(k, i)
@@ -52,10 +52,11 @@ module formant #(
 	logic [BIT_WIDTH-1:0] B_output_data [0:FORMANTS-1];
 	
 	always_ff @(posedge clk_in) begin
-		debug_formant_T <= (T_output_data[0] != 0) ? T_output_data[0] : debug_formant_T;
-		debug_formant_E <= (E_output_data[0] != 0) ? E_output_data : debug_formant_E;
-		debug_formant_F <= (F_output_data[0] != 0) ? F_output_data[0] : debug_formant_F;
-		debug_formant_B <= (B_output_data[0] != 0) ? B_output_data[0] : debug_formant_B;
+		debug_formant_T <= (T_output_data[0]) ? T_output_data[0] : debug_formant_T;
+		debug_formant_E <= (E_output_data) ? E_output_data : debug_formant_E;
+		debug_formant_F <= (F_output_data[1]) ? F_output_data[1] : debug_formant_F;
+		// debug_formant_B <= (B_output_data[2]) ? B_output_data[2] : debug_formant_B;
+		debug_formant_B <= (phi_input_valid) ? (T_output_data[0]) : debug_formant_B;
 	end
 
 	generate
@@ -187,7 +188,12 @@ module formant #(
 	// phi functions
 	logic phi_input_valid;
 	logic phi_input_start;
-	logic [0:FORMANTS-1] [BIT_WIDTH-1:0] phi_output;
+	logic [BIT_WIDTH-1:0] phi_output_1;
+	logic [BIT_WIDTH-1:0] phi_output_2;
+	logic [BIT_WIDTH-1:0] phi_output_3;
+	logic [BIT_WIDTH-1:0] phi_output_4;
+	logic [BIT_WIDTH-1:0] phi_output_5;
+	
 	logic phi_output_valid;
 	
 	// buffer time
@@ -199,9 +205,15 @@ module formant #(
 
 	always_comb begin
 		case(state)
-			default: T_read_address = emin_T_read_address;
-			SEGMENT_CALC: T_read_address = segment_T_read_address;
-			PHI_CALC: T_read_address = phi_T_read_address;
+			SEGMENT_CALC: begin
+				T_read_address = segment_T_read_address;
+			end
+			PHI_CALC: begin
+				T_read_address = phi_T_read_address;
+			end 
+			default: begin
+				T_read_address = emin_T_read_address;
+			end
 		endcase
 	end
 
@@ -217,8 +229,12 @@ module formant #(
 		end else begin
 			case (state)
 				START: begin
+					phi_input_start <= 1'b0;
+					phi_input_valid <= 1'b0;
+					emin_input_valid <= 1'b0;
+					f_begin_iter <= 1'b0;
 					current_i <= 0;
-					formant_valid <= 0;
+					formant_valid <= 1'b0;
 					state_tracker <= 3'b000;
 					if (fft_valid) begin
 						// FFT data is starting to arrive
@@ -237,7 +253,7 @@ module formant #(
 					emin_input_valid <= 1'b0;
 					state_tracker <= 3'b010;
 					//T_read_address <= emin_T_read_address;
-					if ((E_write_address == 0) && E_input_data_valid) begin
+					if (E_iter_done) begin
 						// we have written the last Emin value
 						state <= F_CALC;
 						f_begin_iter <= 1'b1;
@@ -301,10 +317,15 @@ module formant #(
 					end else if (phi_output_valid) begin
 						state <= START;
 						formant_valid <= 1'b1;
-						// formant_freq <= phi_output; // cocotb does not support this
-						for (integer b = 0; b < FORMANTS; ++b) begin
-							formant_freq[b] <= phi_output[b];
-						end
+						formant_freq[0] <= phi_output_1;
+						formant_freq[1] <= phi_output_2;
+						formant_freq[2] <= phi_output_3;
+						formant_freq[3] <= phi_output_4;
+						formant_freq[4] <= phi_output_5;
+						// // formant_freq <= phi_output; // cocotb does not support this
+						// for (integer b = 0; b < FORMANTS; ++b) begin
+						// 	formant_freq[b] <= phi_output[b];
+						// end
 					end
 				end
 			endcase
@@ -328,7 +349,7 @@ module formant #(
 		.output_address(T_write_address)
 	);
 
-	logic emin_input_valid;
+	logic emin_input_valid, E_iter_done;
 
 	emin #(
 		.BIT_WIDTH(BIT_WIDTH),
@@ -345,7 +366,8 @@ module formant #(
 		.T_req(emin_T_read_address),
 		.j_out(E_write_address),
 		.data_out(E_input_data),
-		.output_valid(E_input_data_valid)
+		.output_valid(E_input_data_valid),
+		.iter_done(E_iter_done)
 	);
 
 	// need to pipeline k_req to make sure we pass the correct
@@ -407,11 +429,17 @@ module formant #(
 	phi_func (
 		.clk_in(clk_in),
 		.rst_in(rst_in),
-		.T_vals(T_output_data),
+		.T_vals_0(T_output_data[0]),
+		.T_vals_1(T_output_data[1]),
+		.T_vals_2(T_output_data[2]),
 		.input_start(phi_input_start),
 		.input_valid(phi_input_valid),
 		.debug_to_acos(debug_to_acos),
-		.output_data(phi_output),
+		.output_data_1(phi_output_1),
+		.output_data_2(phi_output_2),
+		.output_data_3(phi_output_3),
+		.output_data_4(phi_output_4),
+		.output_data_5(phi_output_5),
 		.output_valid(phi_output_valid)
 	);
 
