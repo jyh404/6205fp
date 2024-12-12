@@ -502,12 +502,15 @@ module top_level
 
 	localparam FRAME_WIDTH = 1280;
 	localparam FRAME_HEIGHT = 720;
-	localparam DATA_LEN = 8;
-	localparam FBRAM_DEPTH = FRAME_WIDTH * FRAME_HEIGHT / DATA_LEN;
+	localparam DATA_PIXEL_LEN = 8;
+	localparam COLOR_LEN = 3;
+	localparam DATA_LEN = DATA_PIXEL_LEN * COLOR_LEN;
+	localparam FBRAM_DEPTH = FRAME_WIDTH * FRAME_HEIGHT / DATA_PIXEL_LEN;
 
 	// formant_graph represents 8 samples of formant data over the last 1/60 s
 	// but we sample only every 1/100 s, so just set all of formant_graph to the same thing
 	// i.e. the last sample received in the frame window
+	// we give three pixels to color
 	logic [DATA_LEN-1:0] formant_graph [0:FRAME_HEIGHT-1];
 
 	// assume freq_buffer gives us FORMANT 32-bit numbers that are between 0 and 5000 (very wrong)
@@ -521,17 +524,17 @@ module top_level
 		if (formant_out_valid) begin
 			for (int row = 0; row < FRAME_HEIGHT; ++row) begin
 				if (row == MAX_HEIGHT - (freq_buffer[0][28:19])) begin
-					formant_graph[row] <= 8'hff;
+					formant_graph[row] <= {12'b001001001001, 12'b001001001001};
 				end else if (row == MAX_HEIGHT - (freq_buffer[1][28:19])) begin
-					formant_graph[row] <= 8'hff;
+					formant_graph[row] <= {12'b010010010010, 12'b010010010010};
 				end else if (row == MAX_HEIGHT - (freq_buffer[2][28:19])) begin
-					formant_graph[row] <= 8'hff;
+					formant_graph[row] <= {12'b011011011011, 12'b011011011011};
 				end else if (row == MAX_HEIGHT - (freq_buffer[3][28:19])) begin
-					formant_graph[row] <= 8'hff;
+					formant_graph[row] <= {12'b100100100100, 12'b100100100100};
 				end else if (row == MAX_HEIGHT - (freq_buffer[4][28:19])) begin
-					formant_graph[row] <= 8'hff;
+					formant_graph[row] <= {12'b101101101101, 12'b101101101101};
 				end else begin
-					formant_graph[row] <= 8'h00;
+					formant_graph[row] <= 24'b0;
 				end
 			end
 		end
@@ -560,7 +563,7 @@ module top_level
 		.addrb(fbram_read_address),   // Port B address bus,
 		.doutb(fbram_output_data),    // Port B RAM output data,
 		.douta(),   // Port A RAM output data, width determined from RAM_WIDTH
-		.dinb(8'b0),     // Port B RAM input data, width determined from RAM_WIDTH
+		.dinb(24'b0),     // Port B RAM input data, width determined from RAM_WIDTH
 		.web(1'b0),       // Port B write enable
 		.ena(1'b1),       // Port A RAM Enable
 		.enb(1'b1),       // Port B RAM Enable,
@@ -616,11 +619,11 @@ module top_level
 	// update the bram data with new formants by inserting into
 	// current offset, then move offset over by 1
 	// recall there are only FRAME_WIDTH/DATA_LEN cols
-	logic [DATA_LEN-1:0] row_data [0:FRAME_WIDTH/DATA_LEN];
-	logic [$clog2(FRAME_WIDTH / DATA_LEN)-1:0] col_offset;
-	logic [$clog2(FRAME_WIDTH / DATA_LEN)-1:0] col_index;
+	logic [DATA_LEN-1:0] row_data [0:FRAME_WIDTH/DATA_PIXEL_LEN];
+	logic [$clog2(FRAME_WIDTH / DATA_PIXEL_LEN)-1:0] col_offset;
+	logic [$clog2(FRAME_WIDTH / DATA_PIXEL_LEN)-1:0] col_index;
 	logic [$clog2(FRAME_HEIGHT)-1:0] row_index;
-	logic [$clog2(FRAME_WIDTH / DATA_LEN)-1:0] col_index_pipeline [0:1];
+	logic [$clog2(FRAME_WIDTH / DATA_PIXEL_LEN)-1:0] col_index_pipeline [0:1];
 
 	// for BRAM waiting
 	always_ff @(posedge clk_pixel) begin
@@ -630,9 +633,9 @@ module top_level
 
 	// drawing row by row: just do white if on, black if off
 	always_comb begin
-		red = (row_data[hcount>>3][hcount[2:0]]) ? 8'hff : 8'h00;
-		green = (row_data[hcount>>3][hcount[2:0]]) ? 8'hff : 8'h00;
-		blue = (row_data[hcount>>3][hcount[2:0]]) ? 8'hff : 8'h00;
+		red = (row_data[hcount>>3][3*hcount[2:0]+2]) ? 8'hff : 8'h00;
+		green = (row_data[hcount>>3][3*hcount[2:0]+1]) ? 8'hff : 8'h00;
+		blue = (row_data[hcount>>3][3*hcount[2:0]]) ? 8'hff : 8'h00;
 	end
 
 	always_ff @(posedge clk_pixel) begin
@@ -656,29 +659,29 @@ module top_level
 						if (vcount == FRAME_HEIGHT - 1) begin
 							fbram_read_address <= col_offset;
 						end else begin
-							fbram_read_address <= (FRAME_WIDTH / DATA_LEN) * (vcount + 1) + col_offset;
+							fbram_read_address <= (FRAME_WIDTH / DATA_PIXEL_LEN) * (vcount + 1) + col_offset;
 						end
 					end
 				end
 				HBLANK: begin
 					// need to load the next row from BRAM into row_data
 					if (vcount == FRAME_HEIGHT - 1) begin
-						if (fbram_read_address == (FRAME_WIDTH / DATA_LEN) - 1) begin
+						if (fbram_read_address == (FRAME_WIDTH / DATA_PIXEL_LEN) - 1) begin
 							fbram_read_address <= 0;
 						end else begin
 							fbram_read_address <= fbram_read_address + 1;
 						end 
 					end else begin
-						if (fbram_read_address == (FRAME_WIDTH / DATA_LEN) * (vcount + 2) - 1) begin
-							fbram_read_address <= (FRAME_WIDTH / DATA_LEN) * (vcount + 1);
+						if (fbram_read_address == (FRAME_WIDTH / DATA_PIXEL_LEN) * (vcount + 2) - 1) begin
+							fbram_read_address <= (FRAME_WIDTH / DATA_PIXEL_LEN) * (vcount + 1);
 						end else begin
 							fbram_read_address <= fbram_read_address + 1;
 						end 
 					end
 					col_index <= col_index + 1;
-					if (col_index_pipeline[1] < FRAME_WIDTH / DATA_LEN) begin
+					if (col_index_pipeline[1] < FRAME_WIDTH / DATA_PIXEL_LEN) begin
 						row_data[col_index_pipeline[1]] <= fbram_output_data;
-						if (col_index_pipeline[1] == FRAME_WIDTH / DATA_LEN - 1) begin
+						if (col_index_pipeline[1] == FRAME_WIDTH / DATA_PIXEL_LEN - 1) begin
 							if (vcount < FRAME_HEIGHT - 1) begin
 								state <= WAIT_DRAW;
 							end else begin
@@ -693,14 +696,14 @@ module top_level
 					// once we draw, zero out
 					// when done, go to WAIT_DRAW
 					if (row_index < FRAME_HEIGHT) begin
-						fbram_write_address <= (FRAME_WIDTH / DATA_LEN) * row_index + col_offset;
+						fbram_write_address <= (FRAME_WIDTH / DATA_PIXEL_LEN) * row_index + col_offset;
 						fbram_input_data <= formant_graph[row_index];
 						fbram_input_data_valid <= 1'b1;
 						row_index <= row_index + 1;
 					end else begin
 						state <= WAIT_DRAW;
 						fbram_input_data_valid <= 1'b0;
-						if (col_offset == (FRAME_WIDTH / DATA_LEN) - 1) begin
+						if (col_offset == (FRAME_WIDTH / DATA_PIXEL_LEN) - 1) begin
 							col_offset <= 0;
 						end else begin
 							col_offset <= col_offset + 1;
