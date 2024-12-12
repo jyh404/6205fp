@@ -50,13 +50,14 @@ module formant #(
 	logic B_input_data_valid [0:FORMANTS-1];
 	logic [I_WIDTH-1:0] B_read_address;
 	logic [BIT_WIDTH-1:0] B_output_data [0:FORMANTS-1];
+
+	logic phi_input_completed;
 	
 	always_ff @(posedge clk_in) begin
-		debug_formant_T <= (T_output_data[0]) ? T_output_data[0] : debug_formant_T;
-		debug_formant_E <= (E_output_data) ? E_output_data : debug_formant_E;
-		debug_formant_F <= (F_output_data[1]) ? F_output_data[1] : debug_formant_F;
-		// debug_formant_B <= (B_output_data[2]) ? B_output_data[2] : debug_formant_B;
-		debug_formant_B <= (phi_input_valid) ? (T_output_data[0]) : debug_formant_B;
+		debug_formant_T <= (phi_output_valid) ? 32'hFFFFFFFF : debug_formant_T;
+		debug_formant_E <= (phi_input_start) ? 32'hFFFFFFFF : debug_formant_E;
+		debug_formant_F <= (phi_input_valid) ? 32'hFFFFFFFF : debug_formant_F;
+		debug_formant_B <= (phi_input_valid) ? 32'hFFFFFFFF : debug_formant_B;
 	end
 
 	generate
@@ -434,6 +435,7 @@ module formant #(
 		.T_vals_2(T_output_data[2]),
 		.input_start(phi_input_start),
 		.input_valid(phi_input_valid),
+		.input_completed(phi_input_completed),
 		.debug_to_acos(debug_to_acos),
 		.output_data_1(phi_output_1),
 		.output_data_2(phi_output_2),
