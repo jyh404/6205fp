@@ -11,6 +11,7 @@ module formant #(
 	output logic [BIT_WIDTH-1:0] debug_formant_E,
 	output logic [BIT_WIDTH-1:0] debug_formant_F,
 	output logic [BIT_WIDTH-1:0] debug_formant_B,
+	output logic [FORMANTS:0] [BIT_WIDTH-1:0] debug_segments,
 	output logic formant_valid,
 	output logic [BIT_WIDTH-1:0] formant_freq [0:FORMANTS-1]
 ); //this has 1million cycles to finish, sure hope it does.
@@ -183,7 +184,7 @@ module formant #(
 	
 	// for traceback
 	logic [I_WIDTH-1:0] segment_values [0:FORMANTS];
-	logic [$clog2(FORMANTS)-1:0] segment;
+	logic [$clog2(FORMANTS+1)-1:0] segment;
 	logic [1:0] delay;
 
 	// phi functions
@@ -193,7 +194,7 @@ module formant #(
 	logic [BIT_WIDTH-1:0] phi_output_2;
 	logic [BIT_WIDTH-1:0] phi_output_3;
 	logic [BIT_WIDTH-1:0] phi_output_4;
-	logic [BIT_WIDTH-1:0] phi_output_5;
+	//logic [BIT_WIDTH-1:0] phi_output_5;
 	
 	logic phi_output_valid;
 	
@@ -264,7 +265,7 @@ module formant #(
 					state_tracker <= 3'b011;
 					f_begin_iter <= 1'b0;
 					if (f_iter_done) begin
-						if (current_i < I - 1) begin
+						if (current_i <= I - 1) begin
 							state <= EMIN_CALC;
 							current_i <= current_i + 1;
 							emin_input_valid <= 1'b1;
@@ -285,6 +286,7 @@ module formant #(
 						end else begin
 							delay <= 2'b10;
 							segment_values[segment-1] <= B_output_data[segment-1];
+							debug_segments[segment-1] <= B_output_data[segment-1];
 							if (segment > 1) begin
 								B_read_address <= B_output_data[segment-1];
 							end
@@ -322,7 +324,7 @@ module formant #(
 						formant_freq[1] <= phi_output_2;
 						formant_freq[2] <= phi_output_3;
 						formant_freq[3] <= phi_output_4;
-						formant_freq[4] <= phi_output_5;
+						//formant_freq[4] <= phi_output_5;
 						// // formant_freq <= phi_output; // cocotb does not support this
 						// for (integer b = 0; b < FORMANTS; ++b) begin
 						// 	formant_freq[b] <= phi_output[b];
@@ -373,10 +375,10 @@ module formant #(
 
 	// need to pipeline k_req to make sure we pass the correct
 	// F(k-1,j) that was requested two cycles ago
-	logic [$clog2(FORMANTS)-1:0] k_req [0:1];
-	logic [$clog2(FORMANTS)-1:0] k_req_begin;
+	logic [$clog2(FORMANTS+1)-1:0] k_req [0:1];
+	logic [$clog2(FORMANTS+1)-1:0] k_req_begin;
 	logic [I_WIDTH-1:0] j_req;
-	logic [$clog2(FORMANTS)-1:0] k_write;
+	logic [$clog2(FORMANTS+1)-1:0] k_write;
 	logic f_output_valid;
 	logic f_begin_iter;
 	logic f_iter_done;
@@ -441,7 +443,7 @@ module formant #(
 		.output_data_2(phi_output_2),
 		.output_data_3(phi_output_3),
 		.output_data_4(phi_output_4),
-		.output_data_5(phi_output_5),
+		//.output_data_5(phi_output_5),
 		.output_valid(phi_output_valid)
 	);
 

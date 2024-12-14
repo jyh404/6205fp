@@ -314,7 +314,7 @@ module top_level
 	// Formant analysis using wfft_result and wfft_valid
 	// Note that these are still fairly sus... reversed_bit or what
 	// but it's time for another file!
-	parameter FORMANTS = 5;
+	parameter FORMANTS = 4;
 	parameter FREQ_INPUTS = 160;
 	
 	logic formant_in_valid; //Keeps on for 160 cycles hopefully
@@ -344,6 +344,7 @@ module top_level
 	logic [SAMPLE_BITS-1:0] debug_formant_E;
 	logic [SAMPLE_BITS-1:0] debug_formant_F;
 	logic [SAMPLE_BITS-1:0] debug_formant_B;
+	logic [FORMANTS:0] [SAMPLE_BITS-1:0] debug_segments;
 	
 	
 	formant #(
@@ -358,6 +359,7 @@ module top_level
 	.debug_formant_E(debug_formant_E),
 	.debug_formant_F(debug_formant_F),
 	.debug_formant_B(debug_formant_B),
+	.debug_segments(debug_segments),
 	.formant_valid(formant_out_valid),
 	.formant_freq(freq_buffer)
 	); //Probably fine to just send all frequencies to module...
@@ -378,397 +380,472 @@ module top_level
 		end
 	end */
 	
-	parameter UART_SAMPLES = 420;
-	parameter CYCLES_PER_SAMPLE = 2200;
-	logic [7:0] uart_420_packets [0:UART_SAMPLES];
-	logic [9:0] uart_counter = UART_SAMPLES;
-	logic [12:0] clock_cycles_per_sample = 0;
-	logic new_uart_data_available = 0;
-	logic [7:0] new_uart_data;
-	// we use fft_start as a flare every 10ms to denote extraction.
+// 	parameter UART_SAMPLES = 420;
+// 	parameter CYCLES_PER_SAMPLE = 2200;
+// 	logic [7:0] uart_420_packets [0:UART_SAMPLES];
+// 	logic [9:0] uart_counter = UART_SAMPLES;
+// 	logic [12:0] clock_cycles_per_sample = 0;
+// 	logic new_uart_data_available = 0;
+// 	logic [7:0] new_uart_data;
+// 	// we use fft_start as a flare every 10ms to denote extraction.
+// 	always_ff @(posedge clk_pixel) begin
+// 		if (uart_counter<UART_SAMPLES) begin
+// 			//output stream has been setup
+// 			//uart 8bits every CYCLES_PER_SAMPLE cycles.
+// 			if (clock_cycles_per_sample < CYCLES_PER_SAMPLE) begin
+// 				clock_cycles_per_sample <= clock_cycles_per_sample + 1;
+// 				new_uart_data_available <= 0; //!!! the thing accumaltes already!
+// 			end
+// 			if (clock_cycles_per_sample == CYCLES_PER_SAMPLE) begin
+// 				clock_cycles_per_sample <= 0;
+// 				uart_counter <= uart_counter + 1;
+// 				new_uart_data_available <= 1;
+// 				new_uart_data <= uart_420_packets[UART_SAMPLES-1];
+// 				for (int i=1; i<UART_SAMPLES; i=i+1) begin
+// 					uart_420_packets[i] <= uart_420_packets[i-1];
+// 				end
+// 			end
+				
+// 		end else if (fft_start > 0) begin
+// 			//10ms flare is given, initialize the output stream
+// 			//[0:160] steals the audio output
+// 			//[160:416] steals the fourier output (only half)
+// 			//[416:420] is constant 128 for figuring this out later.
+// 			for (int i=0; i<160; i=i+1) begin
+// 				uart_420_packets[i] <= 
+// 					8'h80 ^ audio_pc_buffer[i + WINDOW_SIZE - WINDOW_OVERLAP][SAMPLE_BITS-1 : SAMPLE_BITS-8];
+// 			end
+// 			for (int i=0; i<160; i=i+1) begin //Now loading the 
+// 				uart_420_packets[i+160] <= reordered_flipflops[i];
+// 			end
+// 			for (int i=320; i<390; i=i+1) begin
+// 				uart_420_packets[i] <= 8'h00;
+// 			end
+// 			uart_420_packets[389] <= 8'hff;
+// 			uart_420_packets[390] <= debug_formant_T[31:24];
+// 			uart_420_packets[391] <= debug_formant_T[23:16];
+// 			uart_420_packets[392] <= debug_formant_T[15:8];
+// 			uart_420_packets[393] <= debug_formant_T[7:0];
+// 			uart_420_packets[394] <= debug_formant_E[31:24];
+// 			uart_420_packets[395] <= debug_formant_E[23:16];
+// 			uart_420_packets[396] <= debug_formant_E[15:8];
+// 			uart_420_packets[397] <= debug_formant_E[7:0];
+// 			uart_420_packets[398] <= debug_formant_F[31:24];
+// 			uart_420_packets[399] <= debug_formant_F[23:16];
+// 			uart_420_packets[400] <= debug_formant_F[15:8];
+// 			uart_420_packets[401] <= debug_formant_F[7:0];
+// 			uart_420_packets[402] <= debug_formant_B[31:24];
+// 			uart_420_packets[403] <= debug_formant_B[23:16];
+// 			uart_420_packets[404] <= debug_formant_B[15:8];
+// 			uart_420_packets[405] <= debug_formant_B[7:0];
+// 			uart_420_packets[406] <= freq_buffer[0][31:24];
+// 			uart_420_packets[407] <= freq_buffer[0][23:16];
+// 			uart_420_packets[408] <= freq_buffer[1][31:24];
+// 			uart_420_packets[409] <= freq_buffer[1][23:16];
+// 			uart_420_packets[410] <= freq_buffer[2][31:24];
+// 			uart_420_packets[411] <= freq_buffer[2][23:16];
+// 			uart_420_packets[412] <= freq_buffer[3][31:24];
+// 			uart_420_packets[413] <= freq_buffer[3][23:16];
+// 			uart_420_packets[414] <= freq_buffer[4][31:24];
+// 			uart_420_packets[415] <= freq_buffer[4][23:16];
+			
+// 			uart_420_packets[416] <= 8'hff;
+// 			uart_420_packets[417] <= 8'hff;
+// 			uart_420_packets[418] <= 8'hff;
+// 			uart_420_packets[419] <= 8'hff;
+			
+// 			uart_counter <= 0; //starts the output stream
+// 		end else
+// 			new_uart_data_available <= 0; //stops from outputing after 420.
+// 	end
+
+//    // Data Buffer SPI-UART
+//    logic                      audio_sample_waiting;
+   
+//    always_ff @(posedge clk_pixel) begin
+// 	 if (sys_rst) audio_sample_waiting <= 0;
+//      //else if (spi_read_data_valid) audio_sample_waiting <= 1; //How we get data in rn
+// 	 else if (new_uart_data_available) audio_sample_waiting <= 1; //use logic to get each sample
+// 	 else if (uart_data_valid == 0) audio_sample_waiting <= 0;
+//    end
+
+//    logic [7:0]                uart_data_in; 
+//    logic                      uart_data_valid;
+//    logic                      uart_busy;
+   
+//    always_ff @(posedge clk_pixel) begin
+//      if (sys_rst) begin 
+// 	   uart_data_in <= 0;
+//       end else if (sw[0]==0) begin 
+// 	   uart_data_valid <= 0;
+// 	 end else if (audio_sample_waiting == 1 && uart_data_valid == 0) begin
+// 	   uart_data_in <= new_uart_data;
+// 	   uart_data_valid <= 1;
+// 	 end else if (uart_busy == 0) begin 
+// 	   uart_data_valid <= 0; //transmission started, dont keep sending it.
+// 	   end
+//    end
+   
+//    // UART Transmitter to FTDI2232
+//    // TODO: instantiate the UART transmitter you just wrote, using the input signals from above.
+   
+//    uart_transmit #(.BAUD_RATE(460800)) my_uart_transmitter
+//    (
+//     .clk_in(clk_pixel),
+//     .rst_in(sys_rst),
+//     .data_byte_in(uart_data_in),
+//     .trigger_in(uart_data_valid),
+//     .busy_out(uart_busy),
+//     .tx_wire_out(uart_txd)
+//     );
+
+	// IT IS TIME TO GRAPH OUR FORMANTS
+	// FBRAM = frame bram
+
+	localparam FRAME_WIDTH = 1280;
+	localparam FRAME_HEIGHT = 720;
+	localparam DATA_PIXEL_LEN = 8;
+	localparam COLOR_LEN = 3;
+	localparam DATA_LEN = DATA_PIXEL_LEN * COLOR_LEN;
+	localparam FBRAM_DEPTH = FRAME_WIDTH * FRAME_HEIGHT / DATA_PIXEL_LEN;
+
+	// formant_graph represents 8 samples of formant data over the last 1/60 s
+	// but we sample only every 1/100 s, so just set all of formant_graph to the same thing
+	// i.e. the last sample received in the frame window
+	// we give three pixels to color
+	logic [DATA_LEN-1:0] formant_graph [0:FRAME_HEIGHT-1];
+
+	// assume freq_buffer gives us FORMANT 32-bit numbers that are between 0 and 5000 (very wrong)
+	// TODO: adjust this!
+	// is zeroing all of this out possible?
+	
+	// we need this to be at least 625, note that we need to flip since
+	// row 0 is at the top of the screen
+	localparam MAX_HEIGHT = 700; 
 	always_ff @(posedge clk_pixel) begin
-		if (uart_counter<UART_SAMPLES) begin
-			//output stream has been setup
-			//uart 8bits every CYCLES_PER_SAMPLE cycles.
-			if (clock_cycles_per_sample < CYCLES_PER_SAMPLE) begin
-				clock_cycles_per_sample <= clock_cycles_per_sample + 1;
-				new_uart_data_available <= 0; //!!! the thing accumaltes already!
-			end
-			if (clock_cycles_per_sample == CYCLES_PER_SAMPLE) begin
-				clock_cycles_per_sample <= 0;
-				uart_counter <= uart_counter + 1;
-				new_uart_data_available <= 1;
-				new_uart_data <= uart_420_packets[UART_SAMPLES-1];
-				for (int i=1; i<UART_SAMPLES; i=i+1) begin
-					uart_420_packets[i] <= uart_420_packets[i-1];
+		if (formant_out_valid) begin
+			for (int row = 0; row < FRAME_HEIGHT; ++row) begin
+				if (row == MAX_HEIGHT - freq_buffer[0][28:19]) begin
+					formant_graph[row] <= {12'b001001001001, 12'b001001001001};
+				end else if (row == MAX_HEIGHT - freq_buffer[1][28:19]) begin
+					formant_graph[row] <= {12'b010010010010, 12'b010010010010};
+				end else if (row == MAX_HEIGHT - freq_buffer[2][28:19]) begin
+					formant_graph[row] <= {12'b011011011011, 12'b011011011011};
+				end else if (row == MAX_HEIGHT - freq_buffer[3][28:19]) begin
+					formant_graph[row] <= {12'b100100100100, 12'b100100100100};
+				//end else if (row == MAX_HEIGHT - freq_buffer[4][28:19]) begin
+					//formant_graph[row] <= {12'b101101101101, 12'b101101101101};
+				//end else if ((row == MAX_HEIGHT  - 10'd0) || (row == MAX_HEIGHT - 10'd625)) begin
+					//formant_graph[row] <= {12'b111111111111, 12'b111111111111};
+				end else if ((row == MAX_HEIGHT - (debug_segments[0]<<2)) || (row == MAX_HEIGHT - (debug_segments[1]<<2)) || (row == MAX_HEIGHT - (debug_segments[2]<<2)) || (row == MAX_HEIGHT - (debug_segments[3]<<2))) begin
+					formant_graph[row] <= {12'b110110110110, 12'b110110110110};
+				end else begin
+					formant_graph[row] <= 24'b0;
 				end
 			end
-				
-		end else if (fft_start > 0) begin
-			//10ms flare is given, initialize the output stream
-			//[0:160] steals the audio output
-			//[160:416] steals the fourier output (only half)
-			//[416:420] is constant 128 for figuring this out later.
-			for (int i=0; i<160; i=i+1) begin
-				uart_420_packets[i] <= 
-					8'h80 ^ audio_pc_buffer[i + WINDOW_SIZE - WINDOW_OVERLAP][SAMPLE_BITS-1 : SAMPLE_BITS-8];
-			end
-			for (int i=0; i<160; i=i+1) begin //Now loading the 
-				uart_420_packets[i+160] <= reordered_flipflops[i];
-			end
-			for (int i=320; i<390; i=i+1) begin
-				uart_420_packets[i] <= 8'h00;
-			end
-			uart_420_packets[389] <= 8'hff;
-			uart_420_packets[390] <= debug_formant_T[31:24];
-			uart_420_packets[391] <= debug_formant_T[23:16];
-			uart_420_packets[392] <= debug_formant_T[15:8];
-			uart_420_packets[393] <= debug_formant_T[7:0];
-			uart_420_packets[394] <= debug_formant_E[31:24];
-			uart_420_packets[395] <= debug_formant_E[23:16];
-			uart_420_packets[396] <= debug_formant_E[15:8];
-			uart_420_packets[397] <= debug_formant_E[7:0];
-			uart_420_packets[398] <= debug_formant_F[31:24];
-			uart_420_packets[399] <= debug_formant_F[23:16];
-			uart_420_packets[400] <= debug_formant_F[15:8];
-			uart_420_packets[401] <= debug_formant_F[7:0];
-			uart_420_packets[402] <= debug_formant_B[31:24];
-			uart_420_packets[403] <= debug_formant_B[23:16];
-			uart_420_packets[404] <= debug_formant_B[15:8];
-			uart_420_packets[405] <= debug_formant_B[7:0];
-			uart_420_packets[406] <= freq_buffer[0][31:24];
-			uart_420_packets[407] <= freq_buffer[0][23:16];
-			uart_420_packets[408] <= freq_buffer[1][31:24];
-			uart_420_packets[409] <= freq_buffer[1][23:16];
-			uart_420_packets[410] <= freq_buffer[2][31:24];
-			uart_420_packets[411] <= freq_buffer[2][23:16];
-			uart_420_packets[412] <= freq_buffer[3][31:24];
-			uart_420_packets[413] <= freq_buffer[3][23:16];
-			uart_420_packets[414] <= freq_buffer[4][31:24];
-			uart_420_packets[415] <= freq_buffer[4][23:16];
-			
-			uart_420_packets[416] <= 8'hff;
-			uart_420_packets[417] <= 8'hff;
-			uart_420_packets[418] <= 8'hff;
-			uart_420_packets[419] <= 8'hff;
-			
-			uart_counter <= 0; //starts the output stream
-		end else
-			new_uart_data_available <= 0; //stops from outputing after 420.
+		end
 	end
 
-   // Data Buffer SPI-UART
-   logic                      audio_sample_waiting;
-   
-   always_ff @(posedge clk_pixel) begin
-	 if (sys_rst) audio_sample_waiting <= 0;
-     //else if (spi_read_data_valid) audio_sample_waiting <= 1; //How we get data in rn
-	 else if (new_uart_data_available) audio_sample_waiting <= 1; //use logic to get each sample
-	 else if (uart_data_valid == 0) audio_sample_waiting <= 0;
-   end
+	logic [$clog2(FBRAM_DEPTH)-1:0] fbram_write_address;
+	logic [DATA_LEN-1:0] fbram_input_data;
+	logic fbram_input_data_valid;
 
-   logic [7:0]                uart_data_in; 
-   logic                      uart_data_valid;
-   logic                      uart_busy;
-   
-   always_ff @(posedge clk_pixel) begin
-     if (sys_rst) begin 
-	   uart_data_in <= 0;
-      end else if (sw[0]==0) begin 
-	   uart_data_valid <= 0;
-	 end else if (audio_sample_waiting == 1 && uart_data_valid == 0) begin
-	   uart_data_in <= new_uart_data;
-	   uart_data_valid <= 1;
-	 end else if (uart_busy == 0) begin 
-	   uart_data_valid <= 0; //transmission started, dont keep sending it.
-	   end
-   end
-   
-   // UART Transmitter to FTDI2232
-   // TODO: instantiate the UART transmitter you just wrote, using the input signals from above.
-   
-   uart_transmit #(.BAUD_RATE(460800)) my_uart_transmitter
-   (
-    .clk_in(clk_pixel),
-    .rst_in(sys_rst),
-    .data_byte_in(uart_data_in),
-    .trigger_in(uart_data_valid),
-    .busy_out(uart_busy),
-    .tx_wire_out(uart_txd)
-    );
+	logic [$clog2(FBRAM_DEPTH)-1:0] fbram_read_address;
+	logic [DATA_LEN-1:0] fbram_output_data;
 
-	// // IT IS TIME TO GRAPH OUR FORMANTS
-	// // FBRAM = frame bram
-
-	// localparam FRAME_WIDTH = 1280;
-	// localparam FRAME_HEIGHT = 720;
-	// localparam DATA_LEN = 8;
-	// localparam FBRAM_DEPTH = FRAME_WIDTH * FRAME_HEIGHT / DATA_LEN;
-
-	// // formant_graph represents 8 samples of formant data over the last 1/60 s
-	// // but we sample only every 1/100 s, so just set all of formant_graph to the same thing
-	// // i.e. the last sample received in the frame window
-	// logic [DATA_LEN-1:0] formant_graph [0:FRAME_HEIGHT-1];
-
-	// // assume freq_buffer gives us FORMANT 32-bit numbers that are between 0 and 5000 (very wrong)
-	// // TODO: adjust this!
-	// // is zeroing all of this out possible?
-	
-	// // we need this to be at least 625, note that we need to flip since
-	// // row 0 is at the top of the screen
-	// localparam MAX_HEIGHT = 700; 
-	// always_ff @(posedge clk_pixel) begin
-	// 	if (formant_out_valid) begin
-	// 		for (int row = 0; row < FRAME_HEIGHT; ++row) begin
-	// 			if (row == MAX_HEIGHT - (freq_buffer[0][28:19])) begin
-	// 				formant_graph[row] <= 8'hff;
-	// 			end else if (row == MAX_HEIGHT - (freq_buffer[1][28:19])) begin
-	// 				formant_graph[row] <= 8'hff;
-	// 			end else if (row == MAX_HEIGHT - (freq_buffer[2][28:19])) begin
-	// 				formant_graph[row] <= 8'hff;
-	// 			end else if (row == MAX_HEIGHT - (freq_buffer[3][28:19])) begin
-	// 				formant_graph[row] <= 8'hff;
-	// 			end else if (row == MAX_HEIGHT - (freq_buffer[4][28:19])) begin
-	// 				formant_graph[row] <= 8'hff;
-	// 			end else begin
-	// 				formant_graph[row] <= 8'h00;
-	// 			end
-	// 		end
-	// 	end
-	// end
-
-	// logic [$clog2(FBRAM_DEPTH)-1:0] fbram_write_address;
-	// logic [DATA_LEN-1:0] fbram_input_data;
-	// logic fbram_input_data_valid;
-
-	// logic [$clog2(FBRAM_DEPTH)-1:0] fbram_read_address;
-	// logic [DATA_LEN-1:0] fbram_output_data;
-
-	// xilinx_true_dual_port_read_first_1_clock_ram #(
-	// 	.RAM_WIDTH(DATA_LEN),
-	// 	.RAM_DEPTH(FBRAM_DEPTH),
-	// 	.RAM_PERFORMANCE("HIGH_PERFORMANCE")
-	// ) 
-	// fbram
-	// (
-	// 	.clka(clk_pixel),     // Clock
-	// 	//writing port:
-	// 	.addra(fbram_write_address),   // Port A address bus,
-	// 	.dina(fbram_input_data),     // Port A RAM input data
-	// 	.wea(fbram_input_data_valid),       // Port A write enable
-	// 	//reading port:
-	// 	.addrb(fbram_read_address),   // Port B address bus,
-	// 	.doutb(fbram_output_data),    // Port B RAM output data,
-	// 	.douta(),   // Port A RAM output data, width determined from RAM_WIDTH
-	// 	.dinb(8'b0),     // Port B RAM input data, width determined from RAM_WIDTH
-	// 	.web(1'b0),       // Port B write enable
-	// 	.ena(1'b1),       // Port A RAM Enable
-	// 	.enb(1'b1),       // Port B RAM Enable,
-	// 	.rsta(1'b0),     // Port A output reset
-	// 	.rstb(1'b0),     // Port B output reset
-	// 	.regcea(1'b1), // Port A output register enable
-	// 	.regceb(1'b1) // Port B output register enable
-	// );
+	xilinx_true_dual_port_read_first_1_clock_ram #(
+		.RAM_WIDTH(DATA_LEN),
+		.RAM_DEPTH(FBRAM_DEPTH),
+		.RAM_PERFORMANCE("HIGH_PERFORMANCE")
+	) 
+	fbram
+	(
+		.clka(clk_pixel),     // Clock
+		//writing port:
+		.addra(fbram_write_address),   // Port A address bus,
+		.dina(fbram_input_data),     // Port A RAM input data
+		.wea(fbram_input_data_valid),       // Port A write enable
+		//reading port:
+		.addrb(fbram_read_address),   // Port B address bus,
+		.doutb(fbram_output_data),    // Port B RAM output data,
+		.douta(),   // Port A RAM output data, width determined from RAM_WIDTH
+		.dinb(24'b0),     // Port B RAM input data, width determined from RAM_WIDTH
+		.web(1'b0),       // Port B write enable
+		.ena(1'b1),       // Port A RAM Enable
+		.enb(1'b1),       // Port B RAM Enable,
+		.rsta(1'b0),     // Port A output reset
+		.rstb(1'b0),     // Port B output reset
+		.regcea(1'b1), // Port A output register enable
+		.regceb(1'b1) // Port B output register enable
+	);
     
-    // logic clk_pixel, clk_5x; //clock lines
-    // logic locked; //locked signal (we'll leave unused but still hook it up)
+    logic clk_pixel, clk_5x; //clock lines
+    logic locked; //locked signal (we'll leave unused but still hook it up)
     
-    // //clock manager...creates 74.25 Hz and 5 times 74.25 MHz for pixel and TMDS
-    // hdmi_clk_wiz_720p mhdmicw (
-    //     .reset(0),
-    //     .locked(locked),
-    //     .clk_ref(clk_100mhz),
-    //     .clk_pixel(clk_pixel),
-    //     .clk_tmds(clk_5x)
-	// );
+    //clock manager...creates 74.25 Hz and 5 times 74.25 MHz for pixel and TMDS
+    hdmi_clk_wiz_720p mhdmicw (
+        .reset(0),
+        .locked(locked),
+        .clk_ref(clk_100mhz),
+        .clk_pixel(clk_pixel),
+        .clk_tmds(clk_5x)
+	);
     
-    // logic [10:0] hcount; //hcount of system!
-    // logic [9:0] vcount; //vcount of system!
-    // logic hor_sync; //horizontal sync signal
-    // logic vert_sync; //vertical sync signal
-    // logic active_draw; //active draw! 1 when in drawing region, 0 in blanking/sync
-    // logic new_frame; //one cycle active indicator of new frame of info!
-    // logic [5:0] frame_count; // 0 to 59 then rollover frame counter
+    logic [10:0] hcount; //hcount of system!
+    logic [9:0] vcount; //vcount of system!
+    logic hor_sync; //horizontal sync signal
+    logic vert_sync; //vertical sync signal
+    logic active_draw; //active draw! 1 when in drawing region, 0 in blanking/sync
+    logic new_frame; //one cycle active indicator of new frame of info!
+    logic [5:0] frame_count; // 0 to 59 then rollover frame counter
     
-    // //written by you previously! (make sure you include in your hdl)
-    // //default instantiation so making signals for 720p
-    // video_sig_gen mvg(
-    //     .pixel_clk_in(clk_pixel),
-    //     .rst_in(sys_rst),
-    //     .hcount_out(hcount),
-    //     .vcount_out(vcount),
-    //     .vs_out(vert_sync),
-    //     .hs_out(hor_sync),
-    //     .ad_out(active_draw),
-    //     .nf_out(new_frame),
-    //     .fc_out(frame_count)
-	// );
+    //written by you previously! (make sure you include in your hdl)
+    //default instantiation so making signals for 720p
+    video_sig_gen mvg(
+        .pixel_clk_in(clk_pixel),
+        .rst_in(sys_rst),
+        .hcount_out(hcount),
+        .vcount_out(vcount),
+        .vs_out(vert_sync),
+        .hs_out(hor_sync),
+        .ad_out(active_draw),
+        .nf_out(new_frame),
+        .fc_out(frame_count)
+	);
     
-    // logic [7:0] red, green, blue; //red green and blue pixel values for output
-    // logic [9:0] tmds_10b [2:0]; //output of each TMDS encoder!
-    // logic tmds_signal [2:0]; //output of each TMDS serializer!
+    logic [7:0] red, green, blue; //red green and blue pixel values for output
+    logic [9:0] tmds_10b [2:0]; //output of each TMDS encoder!
+    logic tmds_signal [2:0]; //output of each TMDS serializer!
 
-	// typedef enum {WAIT_DRAW, DRAW, HBLANK, VBLANK} frame_state;
-	// frame_state state;
+	typedef enum {WAIT_DRAW, DRAW, HBLANK, VBLANK} frame_state;
+	frame_state state;
 
-	// // draw row by row
-	// // fetch next row's data during blanking period for the row
-	// // update the bram data with new formants by inserting into
-	// // current offset, then move offset over by 1
-	// // recall there are only FRAME_WIDTH/DATA_LEN cols
-	// logic [DATA_LEN-1:0] row_data [0:FRAME_WIDTH/DATA_LEN];
-	// logic [$clog2(FRAME_WIDTH / DATA_LEN)-1:0] col_offset;
-	// logic [$clog2(FRAME_WIDTH / DATA_LEN)-1:0] col_index;
-	// logic [$clog2(FRAME_HEIGHT)-1:0] row_index;
-	// logic [$clog2(FRAME_WIDTH / DATA_LEN)-1:0] col_index_pipeline [0:1];
+	// draw row by row
+	// fetch next row's data during blanking period for the row
+	// update the bram data with new formants by inserting into
+	// current offset, then move offset over by 1
+	// recall there are only FRAME_WIDTH/DATA_LEN cols
+	logic [DATA_LEN-1:0] row_data [0:FRAME_WIDTH/DATA_PIXEL_LEN];
+	logic [$clog2(FRAME_WIDTH / DATA_PIXEL_LEN)-1:0] col_offset;
+	logic [$clog2(FRAME_WIDTH / DATA_PIXEL_LEN)-1:0] col_index;
+	logic [$clog2(FRAME_HEIGHT)-1:0] row_index;
+	logic [$clog2(FRAME_WIDTH / DATA_PIXEL_LEN)-1:0] col_index_pipeline [0:1];
 
-	// // for BRAM waiting
-	// always_ff @(posedge clk_pixel) begin
-	// 	col_index_pipeline[0] <= col_index;
-	// 	col_index_pipeline[1] <= col_index_pipeline[0];
-	// end
+	// for BRAM waiting
+	always_ff @(posedge clk_pixel) begin
+		col_index_pipeline[0] <= col_index;
+		col_index_pipeline[1] <= col_index_pipeline[0];
+	end
 
-	// // drawing row by row: just do white if on, black if off
-	// always_comb begin
-	// 	red = (row_data[hcount>>3][hcount[2:0]]) ? 8'hff : 8'h00;
-	// 	green = (row_data[hcount>>3][hcount[2:0]]) ? 8'hff : 8'h00;
-	// 	blue = (row_data[hcount>>3][hcount[2:0]]) ? 8'hff : 8'h00;
-	// end
+	// drawing row by row: just do white if on, black if off
+	always_comb begin
+		red = (row_data[hcount>>3][3*hcount[2:0]+2]) ? 8'hff : 8'h00;
+		green = (row_data[hcount>>3][3*hcount[2:0]+1]) ? 8'hff : 8'h00;
+		blue = (row_data[hcount>>3][3*hcount[2:0]]) ? 8'hff : 8'h00;
+	end
 
-	// always_ff @(posedge clk_pixel) begin
-	// 	if (sys_rst) begin
-	// 		state <= WAIT_DRAW;
-	// 		col_offset <= 0;
-	// 		fbram_read_address <= 0;
-	// 		fbram_input_data_valid <= 1'b0;
-	// 	end else begin
-	// 		case (state) 
-	// 			WAIT_DRAW: begin
-	// 				fbram_input_data_valid <= 1'b0;
-	// 				if (active_draw) begin
-	// 					state <= DRAW;
-	// 				end
-	// 			end
-	// 			DRAW: begin
-	// 				if (hcount == FRAME_WIDTH - 1) begin
-	// 					state <= HBLANK;
-	// 					col_index <= 0;
-	// 					if (vcount == FRAME_HEIGHT - 1) begin
-	// 						fbram_read_address <= col_offset;
-	// 					end else begin
-	// 						fbram_read_address <= (FRAME_WIDTH / DATA_LEN) * (vcount + 1) + col_offset;
-	// 					end
-	// 				end
-	// 			end
-	// 			HBLANK: begin
-	// 				// need to load the next row from BRAM into row_data
-	// 				if (vcount == FRAME_HEIGHT - 1) begin
-	// 					if (fbram_read_address == (FRAME_WIDTH / DATA_LEN) - 1) begin
-	// 						fbram_read_address <= 0;
-	// 					end else begin
-	// 						fbram_read_address <= fbram_read_address + 1;
-	// 					end 
-	// 				end else begin
-	// 					if (fbram_read_address == (FRAME_WIDTH / DATA_LEN) * (vcount + 2) - 1) begin
-	// 						fbram_read_address <= (FRAME_WIDTH / DATA_LEN) * (vcount + 1);
-	// 					end else begin
-	// 						fbram_read_address <= fbram_read_address + 1;
-	// 					end 
-	// 				end
-	// 				col_index <= col_index + 1;
-	// 				if (col_index_pipeline[1] < FRAME_WIDTH / DATA_LEN) begin
-	// 					row_data[col_index_pipeline[1]] <= fbram_output_data;
-	// 					if (col_index_pipeline[1] == FRAME_WIDTH / DATA_LEN - 1) begin
-	// 						if (vcount < FRAME_HEIGHT - 1) begin
-	// 							state <= WAIT_DRAW;
-	// 						end else begin
-	// 							state <= VBLANK;
-	// 							row_index <= 0;
-	// 						end
-	// 					end
-	// 				end
-	// 			end
-	// 			VBLANK: begin
-	// 				// move formant_graphs data into bram
-	// 				// once we draw, zero out
-	// 				// when done, go to WAIT_DRAW
-	// 				if (row_index < FRAME_HEIGHT) begin
-	// 					fbram_write_address <= (FRAME_WIDTH / DATA_LEN) * row_index + col_offset;
-	// 					fbram_input_data <= formant_graph[row_index];
-	// 					fbram_input_data_valid <= 1'b1;
-	// 					row_index <= row_index + 1;
-	// 				end else begin
-	// 					state <= WAIT_DRAW;
-	// 					fbram_input_data_valid <= 1'b0;
-	// 					if (col_offset == (FRAME_WIDTH / DATA_LEN) - 1) begin
-	// 						col_offset <= 0;
-	// 					end else begin
-	// 						col_offset <= col_offset + 1;
-	// 					end
-	// 				end
-	// 			end
-	// 		endcase
-	// 	end
-	// end
+	always_ff @(posedge clk_pixel) begin
+		if (sys_rst) begin
+			state <= WAIT_DRAW;
+			col_offset <= 0;
+			fbram_read_address <= 0;
+			fbram_input_data_valid <= 1'b0;
+		end else begin
+			case (state) 
+				WAIT_DRAW: begin
+					fbram_input_data_valid <= 1'b0;
+					if (active_draw) begin
+						state <= DRAW;
+					end
+				end
+				DRAW: begin
+					if (hcount == FRAME_WIDTH - 1) begin
+						state <= HBLANK;
+						col_index <= 0;
+						if (vcount == FRAME_HEIGHT - 1) begin
+							fbram_read_address <= col_offset;
+						end else begin
+							fbram_read_address <= (FRAME_WIDTH / DATA_PIXEL_LEN) * (vcount + 1) + col_offset;
+						end
+					end
+				end
+				HBLANK: begin
+					// need to load the next row from BRAM into row_data
+					if (vcount == FRAME_HEIGHT - 1) begin
+						if (fbram_read_address == (FRAME_WIDTH / DATA_PIXEL_LEN) - 1) begin
+							fbram_read_address <= 0;
+						end else begin
+							fbram_read_address <= fbram_read_address + 1;
+						end 
+					end else begin
+						if (fbram_read_address == (FRAME_WIDTH / DATA_PIXEL_LEN) * (vcount + 2) - 1) begin
+							fbram_read_address <= (FRAME_WIDTH / DATA_PIXEL_LEN) * (vcount + 1);
+						end else begin
+							fbram_read_address <= fbram_read_address + 1;
+						end 
+					end
+					col_index <= col_index + 1;
+					if (col_index_pipeline[1] < FRAME_WIDTH / DATA_PIXEL_LEN) begin
+						row_data[col_index_pipeline[1]] <= fbram_output_data;
+						if (col_index_pipeline[1] == FRAME_WIDTH / DATA_PIXEL_LEN - 1) begin
+							if (vcount < FRAME_HEIGHT - 1) begin
+								state <= WAIT_DRAW;
+							end else begin
+								state <= VBLANK;
+								row_index <= 0;
+							end
+						end
+					end
+				end
+				VBLANK: begin
+					// move formant_graphs data into bram
+					// once we draw, zero out
+					// when done, go to WAIT_DRAW
+					if (row_index < FRAME_HEIGHT) begin
+						fbram_write_address <= (FRAME_WIDTH / DATA_PIXEL_LEN) * row_index + col_offset;
+						fbram_input_data <= formant_graph[row_index];
+						fbram_input_data_valid <= 1'b1;
+						row_index <= row_index + 1;
+					end else begin
+						state <= WAIT_DRAW;
+						fbram_input_data_valid <= 1'b0;
+						if (col_offset == (FRAME_WIDTH / DATA_PIXEL_LEN) - 1) begin
+							col_offset <= 0;
+						end else begin
+							col_offset <= col_offset + 1;
+						end
+					end
+				end
+			endcase
+		end
+	end
     
-    // //three tmds_encoders (blue, green, red)
+    //three tmds_encoders (blue, green, red)
     
-    // tmds_encoder tmds_red(
-    //     .clk_in(clk_pixel),
-    //     .rst_in(sys_rst),
-    //     .data_in(red),
-    //     .control_in(2'b0),
-    //     .ve_in(active_draw),
-    //     .tmds_out(tmds_10b[2]));
+    tmds_encoder tmds_red(
+        .clk_in(clk_pixel),
+        .rst_in(sys_rst),
+        .data_in(red),
+        .control_in(2'b0),
+        .ve_in(active_draw),
+        .tmds_out(tmds_10b[2]));
 
-    // tmds_encoder tmds_green(
-    //     .clk_in(clk_pixel),
-    //     .rst_in(sys_rst),
-    //     .data_in(green),
-    //     .control_in(2'b0),
-    //     .ve_in(active_draw),
-    //     .tmds_out(tmds_10b[1]));
+    tmds_encoder tmds_green(
+        .clk_in(clk_pixel),
+        .rst_in(sys_rst),
+        .data_in(green),
+        .control_in(2'b0),
+        .ve_in(active_draw),
+        .tmds_out(tmds_10b[1]));
 
-    // tmds_encoder tmds_blue(
-    //     .clk_in(clk_pixel),
-    //     .rst_in(sys_rst),
-    //     .data_in(blue),
-    //     .control_in({vert_sync, hor_sync}),
-    //     .ve_in(active_draw),
-    //     .tmds_out(tmds_10b[0]));
+    tmds_encoder tmds_blue(
+        .clk_in(clk_pixel),
+        .rst_in(sys_rst),
+        .data_in(blue),
+        .control_in({vert_sync, hor_sync}),
+        .ve_in(active_draw),
+        .tmds_out(tmds_10b[0]));
     
-    // //three tmds_serializers (blue, green, red):
-    // tmds_serializer red_ser(
-    //     .clk_pixel_in(clk_pixel),
-    //     .clk_5x_in(clk_5x),
-    //     .rst_in(sys_rst),
-    //     .tmds_in(tmds_10b[2]),
-    //     .tmds_out(tmds_signal[2]));
+    //three tmds_serializers (blue, green, red):
+    tmds_serializer red_ser(
+        .clk_pixel_in(clk_pixel),
+        .clk_5x_in(clk_5x),
+        .rst_in(sys_rst),
+        .tmds_in(tmds_10b[2]),
+        .tmds_out(tmds_signal[2]));
 
-    // tmds_serializer green_ser(
-    //     .clk_pixel_in(clk_pixel),
-    //     .clk_5x_in(clk_5x),
-    //     .rst_in(sys_rst),
-    //     .tmds_in(tmds_10b[1]),
-    //     .tmds_out(tmds_signal[1]));
+    tmds_serializer green_ser(
+        .clk_pixel_in(clk_pixel),
+        .clk_5x_in(clk_5x),
+        .rst_in(sys_rst),
+        .tmds_in(tmds_10b[1]),
+        .tmds_out(tmds_signal[1]));
 
-    // tmds_serializer blue_ser(
-    //     .clk_pixel_in(clk_pixel),
-    //     .clk_5x_in(clk_5x),
-    //     .rst_in(sys_rst),
-    //     .tmds_in(tmds_10b[0]),
-    //     .tmds_out(tmds_signal[0]));
+    tmds_serializer blue_ser(
+        .clk_pixel_in(clk_pixel),
+        .clk_5x_in(clk_5x),
+        .rst_in(sys_rst),
+        .tmds_in(tmds_10b[0]),
+        .tmds_out(tmds_signal[0]));
     
-    // //output buffers generating differential signals:
-    // //three for the r,g,b signals and one that is at the pixel clock rate
-    // //the HDMI receivers use recover logic coupled with the control signals asserted
-    // //during blanking and sync periods to synchronize their faster bit clocks off
-    // //of the slower pixel clock (so they can recover a clock of about 742.5 MHz from
-    // //the slower 74.25 MHz clock)
-    // OBUFDS OBUFDS_blue (.I(tmds_signal[0]), .O(hdmi_tx_p[0]), .OB(hdmi_tx_n[0]));
-    // OBUFDS OBUFDS_green(.I(tmds_signal[1]), .O(hdmi_tx_p[1]), .OB(hdmi_tx_n[1]));
-    // OBUFDS OBUFDS_red  (.I(tmds_signal[2]), .O(hdmi_tx_p[2]), .OB(hdmi_tx_n[2]));
-    // OBUFDS OBUFDS_clock(.I(clk_pixel), .O(hdmi_clk_p), .OB(hdmi_clk_n));
+    //output buffers generating differential signals:
+    //three for the r,g,b signals and one that is at the pixel clock rate
+    //the HDMI receivers use recover logic coupled with the control signals asserted
+    //during blanking and sync periods to synchronize their faster bit clocks off
+    //of the slower pixel clock (so they can recover a clock of about 742.5 MHz from
+    //the slower 74.25 MHz clock)
+    OBUFDS OBUFDS_blue (.I(tmds_signal[0]), .O(hdmi_tx_p[0]), .OB(hdmi_tx_n[0]));
+    OBUFDS OBUFDS_green(.I(tmds_signal[1]), .O(hdmi_tx_p[1]), .OB(hdmi_tx_n[1]));
+    OBUFDS OBUFDS_red  (.I(tmds_signal[2]), .O(hdmi_tx_p[2]), .OB(hdmi_tx_n[2]));
+    OBUFDS OBUFDS_clock(.I(clk_pixel), .O(hdmi_clk_p), .OB(hdmi_clk_n));
+
+	// 
+	//
+	// MODULE FOR RECORDING FORMANTS AND SHINING LIGHT FOR WHICH IS CLOSEST
+	// Uses led, switches(sw) (for which to record) and button 1 (btn[1]) (for recording)
+	//
+	parameter DIFF_MAX = 200;
+	parameter FORMANTS_USED = 2;
+	parameter SWITCHES_USED = 8;
+
+	logic [15:0] memory_form [1:FORMANTS_USED] [0:SWITCHES_USED-1]; //use switches 0 to 7
+	logic [15:0] memory_form_buffer [1:FORMANTS_USED] [0:3]; //used to take the formant value
+	logic [15:0] memory_form_buffer_average [1:FORMANTS_USED];
+	logic memory_form_cts [1:FORMANTS_USED];
+	logic [15:0] euc_distance_form [1:FORMANTS_USED] [0:SWITCHES_USED-1];
+	logic [3:0] led_buffer [0:SWITCHES_USED-1];
+	logic [15:0] available_memory_form [1:FORMANTS_USED];
+
+	always_ff @(posedge clk_pixel) begin
+		for (int f=1;f<=FORMANTS_USED;f++) begin
+			// temp record in buffers
+			if (formant_out_valid && btn[1]) begin
+				memory_form_buffer[f][0] <= freq_buffer[f][31:16];
+				memory_form_buffer[f][1] <= memory_form_buffer[f][0];
+				memory_form_buffer[f][2] <= memory_form_buffer[f][1];
+				memory_form_buffer[f][3] <= memory_form_buffer[f][2];
+			end
+				
+			// compute average
+			memory_form_buffer_average[f] <= 
+				(memory_form_buffer[f][0] >> 2) + (memory_form_buffer[f][1] >> 2) 
+				+ (memory_form_buffer[f][2] >> 2)+ (memory_form_buffer[f][3] >> 2);
+			
+			// check if buffer is roughly constant
+			memory_form_cts[f] <= 
+				((memory_form_buffer_average[f] - memory_form_buffer[f][0] < DIFF_MAX) && (memory_form_buffer_average[f] - memory_form_buffer[f][1] < DIFF_MAX)
+				&& (memory_form_buffer_average[f] - memory_form_buffer[f][2] < DIFF_MAX) && (memory_form_buffer_average[f] - memory_form_buffer[f][3] < DIFF_MAX)); 
+
+			// take the latest constant value
+			available_memory_form[f] <= (memory_form_cts[f]) ? memory_form_buffer_average[f] : available_memory_form[f];
+		
+			for (int i=0;i<SWITCHES_USED;i++) begin
+			
+				// read a memory if switch down
+				// require some amount of consistency
+				// memory_form[f][i] <= (sw[i] && memory_form_cts[f]) ? memory_form_buffer_average[f] : memory_form[f][i];
+				
+				// do away with consistency???
+				memory_form[f][i] <= (sys_rst) ? 
+					0 : (sw[i]) ? memory_form_buffer_average[f] : memory_form[f][i];
+			
+				// distance to recorded formants
+				euc_distance_form[f][i] <= (freq_buffer[f][31:16] > memory_form[f][i]) ? 
+					freq_buffer[f][31:16] - memory_form[f][i] : memory_form[f][i] - freq_buffer[f][31:16];
+			
+			end
+		end
+		
+		for (int i=0; i<SWITCHES_USED;i++) begin
+			//stores 4 tests
+			led_buffer[i][0] <= (sw[SWITCHES_USED]) ? ((euc_distance_form[1][i] < DIFF_MAX) 
+			&& (euc_distance_form[2][i] < DIFF_MAX)) : 0;
+			led_buffer[i][3:1] <= led_buffer[i][2:0];
+			
+			//lights up if any of 4 tests work.
+			led[i] <= led_buffer[i][0]|led_buffer[i][1]|led_buffer[i][2]|led_buffer[i][3];
+		end
+	end
 
 endmodule // top_level
 

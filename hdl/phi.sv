@@ -20,7 +20,7 @@ module phi #(
     output logic [BIT_WIDTH-1:0] output_data_2,
     output logic [BIT_WIDTH-1:0] output_data_3,
     output logic [BIT_WIDTH-1:0] output_data_4,
-    output logic [BIT_WIDTH-1:0] output_data_5,
+    //output logic [BIT_WIDTH-1:0] output_data_5,
     output logic output_valid
 );
     // assumes that segments have been calculated already
@@ -36,7 +36,7 @@ module phi #(
 	
 	logic [BIT_WIDTH-1:0] T_vals_storage [0:NU_VALUES-1] [0:FORMANTS-1];
 	logic flare_seen;
-	logic [$clog2(FORMANTS)-1:0] T_vals_seen = 0;
+	logic [$clog2(FORMANTS+1)-1:0] T_vals_seen = 0;
 	logic all_seen = 0;
 	
 	always_ff @(posedge clk_in) begin
@@ -56,6 +56,7 @@ module phi #(
 					if (T_vals_seen == FORMANTS) begin //overflowing
 						state <= ARITHMETIC;
 						formant_index <= 0;
+						cycle_count <= CYCLES_PER_PHI-2;
 					end else if (input_valid) begin
 						T_vals_seen <= T_vals_seen + 1;
 						T_vals_storage[0] [T_vals_seen] <= T_vals_0;
@@ -64,6 +65,11 @@ module phi #(
 					end
 				end
 				ARITHMETIC: begin
+					if (cycle_count == CYCLES_PER_PHI-1)
+						cycle_count <= 0;
+					else
+						cycle_count <= cycle_count+1;
+
 					input_completed <= 1'b1;
 					case (cycle_count)
 						0: begin
@@ -163,7 +169,7 @@ module phi #(
 							output_data_2 <= (formant_index == 2) ? {acos_data, 8'b0} : output_data_2;
 							output_data_3 <= (formant_index == 3) ? {acos_data, 8'b0} : output_data_3;
 							output_data_4 <= (formant_index == 4) ? {acos_data, 8'b0} : output_data_4;
-							output_data_5 <= (formant_index == 5) ? {acos_data, 8'b0} : output_data_5;
+							//output_data_5 <= (formant_index == 5) ? {acos_data, 8'b0} : output_data_5;
 							// output_data[formant_index-1] <= {acos_data,8'b0};
 						end
 						86: begin
@@ -189,15 +195,10 @@ module phi #(
 	// because it is a small time constant.
 	
 	parameter CYCLES_PER_PHI = 100;
-	logic [$clog2(CYCLES_PER_PHI)-1:0] cycle_count = 0;
-	logic [$clog2(FORMANTS+1)-1:0] formant_index = 0;
+	logic [$clog2(CYCLES_PER_PHI)-1:0] cycle_count;
+	logic [$clog2(FORMANTS+1)-1:0] formant_index;
 	
-	always_ff @(posedge clk_in) begin
-		if (cycle_count == CYCLES_PER_PHI-1)
-			cycle_count <= 0;
-		else
-			cycle_count <= cycle_count+1;
-	end
+
 	//this essentially acts like a 1MHz clock.
 	//we synchronize stuff to this clock.
 	logic [BIT_WIDTH-1:0] r_small [0:NU_VALUES-1];

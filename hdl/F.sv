@@ -9,9 +9,9 @@ module f #(
 	input wire [$clog2(I)-1:0] i, // decide when to begin processing i, needs Emin to finish
 	input wire [BIT_WIDTH-1:0] e_prev, // E(j+1,i)
 	input wire [BIT_WIDTH-1:0] f_prev, // F(k-1,j)
-	output logic [$clog2(FORMANTS)-1:0] k_req,
+	output logic [$clog2(FORMANTS+1)-1:0] k_req,
 	output logic [$clog2(I)-1:0] j_req,
-	output logic [$clog2(FORMANTS)-1:0] k_write,
+	output logic [$clog2(FORMANTS+1)-1:0] k_write,
 	output logic [BIT_WIDTH-1:0] f_data,
 	output logic [BIT_WIDTH-1:0] b_data,
     output logic output_valid, // only on when f_data, b_data is correct
@@ -38,7 +38,7 @@ module f #(
 
 	parameter NUM_STAGES = 4;
 	logic signed [$clog2(I):0] j_pipeline [0:NUM_STAGES-1];
-	logic [$clog2(FORMANTS)-1:0] k_pipeline [0:NUM_STAGES-1];
+	logic [$clog2(FORMANTS+1)-1:0] k_pipeline [0:NUM_STAGES-1];
 	// 0: send in k, j
 	// 1:
 	// 2: receive F(k-1,j), Emin(j+1,i), write F(k,i), B(k,i)
@@ -69,7 +69,7 @@ module f #(
 				REQ_F: begin
 					// we don't actually request F(k,i); note k_req just stores current k
 					// but easier to pause and separate CALC and F step
-					cur_f <= 32'h7FFFFFFF; // largest positive signed
+					cur_f <= 32'h3FFFFFFF; // largest positive signed
 					state <= CALC;
 					j_pipeline[0] <= $signed({1'b0, k_req}) - $signed(2);
 					k_pipeline[0] <= k_req;
