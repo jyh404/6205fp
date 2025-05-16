@@ -1,8 +1,8 @@
 Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
 ---------------------------------------------------------------------------------------------------------------------------------------------
 | Tool Version : Vivado v.2024.1 (lin64) Build 5076996 Wed May 22 18:36:09 MDT 2024
-| Date         : Wed Dec 11 21:52:26 2024
-| Host         : eecs-digital-42 running 64-bit Ubuntu 24.04.1 LTS
+| Date         : Fri May 16 15:50:28 2025
+| Host         : eecs-digital-38 running 64-bit Ubuntu 24.04.1 LTS
 | Command      : report_timing -file obj/post_route_timing.rpt
 | Design       : top_level
 | Device       : 7s50-csga324
@@ -12,86 +12,66 @@ Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2024 Advanc
 
 Timing Report
 
-Slack (MET) :             0.082ns  (required time - arrival time)
-  Source:                 my_dp_formant/phi_func/to_acos_reg[11]/C
-                            (rising edge-triggered cell FDRE clocked by gclk  {rise@0.000ns fall@4.000ns period=10.000ns})
-  Destination:            my_dp_formant/phi_func/acos_calc/acos_out_reg[21]/D
-                            (rising edge-triggered cell FDRE clocked by gclk  {rise@0.000ns fall@4.000ns period=10.000ns})
-  Path Group:             gclk
+Slack (MET) :             0.612ns  (required time - arrival time)
+  Source:                 my_dp_formant/t_func/output_address_reg[5]__0/C
+                            (rising edge-triggered cell FDRE clocked by clk_pixel_clk_wiz_0  {rise@0.000ns fall@6.734ns period=13.468ns})
+  Destination:            my_dp_formant/genblk1[0].T_bram/BRAM_reg_0_63_12_14/RAMA/WADR5
+                            (rising edge-triggered cell RAMD64E clocked by clk_pixel_clk_wiz_0  {rise@0.000ns fall@6.734ns period=13.468ns})
+  Path Group:             clk_pixel_clk_wiz_0
   Path Type:              Setup (Max at Slow Process Corner)
-  Requirement:            10.000ns  (gclk rise@10.000ns - gclk rise@0.000ns)
-  Data Path Delay:        9.906ns  (logic 7.642ns (77.146%)  route 2.264ns (22.854%))
-  Logic Levels:           10  (CARRY4=6 DSP48E1=2 LUT1=1 LUT2=1)
-  Clock Path Skew:        -0.039ns (DCD - SCD + CPR)
-    Destination Clock Delay (DCD):    4.755ns = ( 14.755 - 10.000 ) 
-    Source Clock Delay      (SCD):    5.051ns
-    Clock Pessimism Removal (CPR):    0.257ns
-  Clock Uncertainty:      0.035ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+  Requirement:            13.468ns  (clk_pixel_clk_wiz_0 rise@13.468ns - clk_pixel_clk_wiz_0 rise@0.000ns)
+  Data Path Delay:        12.213ns  (logic 0.478ns (3.914%)  route 11.735ns (96.086%))
+  Logic Levels:           0  
+  Clock Path Skew:        -0.062ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    -1.505ns = ( 11.963 - 13.468 ) 
+    Source Clock Delay      (SCD):    -0.961ns
+    Clock Pessimism Removal (CPR):    0.482ns
+  Clock Uncertainty:      0.168ns  ((TSJ^2 + DJ^2)^1/2) / 2 + PE
     Total System Jitter     (TSJ):    0.071ns
-    Total Input Jitter      (TIJ):    0.000ns
-    Discrete Jitter          (DJ):    0.000ns
+    Discrete Jitter          (DJ):    0.329ns
     Phase Error              (PE):    0.000ns
 
     Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
   -------------------------------------------------------------------    -------------------
-                         (clock gclk rise edge)       0.000     0.000 r  
+                         (clock clk_pixel_clk_wiz_0 rise edge)
+                                                      0.000     0.000 r  
     N15                                               0.000     0.000 r  clk_100mhz (IN)
-                         net (fo=0)                   0.000     0.000    clk_100mhz
-    N15                  IBUF (Prop_ibuf_I_O)         1.440     1.440 r  clk_100mhz_IBUF_inst/O
-                         net (fo=1, routed)           1.972     3.412    clk_100mhz_IBUF
-    BUFGCTRL_X0Y0        BUFG (Prop_bufg_I_O)         0.096     3.508 r  clk_100mhz_IBUF_BUFG_inst/O
-                         net (fo=21599, routed)       1.543     5.051    my_dp_formant/phi_func/clk_100mhz_IBUF_BUFG
-    SLICE_X12Y71         FDRE                                         r  my_dp_formant/phi_func/to_acos_reg[11]/C
+                         net (fo=0)                   0.000     0.000    mhdmicw/clk_100mhz
+    N15                  IBUF (Prop_ibuf_I_O)         1.440     1.440 r  mhdmicw/clkin1_ibufg/O
+                         net (fo=1, routed)           1.233     2.673    mhdmicw/clk_ref_clk_wiz_0
+    MMCME2_ADV_X0Y0      MMCME2_ADV (Prop_mmcme2_adv_CLKIN1_CLKOUT0)
+                                                     -6.965    -4.291 r  mhdmicw/mmcm_adv_inst/CLKOUT0
+                         net (fo=1, routed)           1.666    -2.625    mhdmicw/clk_pixel_clk_wiz_0
+    BUFGCTRL_X0Y0        BUFG (Prop_bufg_I_O)         0.096    -2.529 r  mhdmicw/clkout1_buf/O
+                         net (fo=21654, routed)       1.568    -0.961    my_dp_formant/t_func/clk_pixel
+    SLICE_X8Y8           FDRE                                         r  my_dp_formant/t_func/output_address_reg[5]__0/C
   -------------------------------------------------------------------    -------------------
-    SLICE_X12Y71         FDRE (Prop_fdre_C_Q)         0.518     5.569 f  my_dp_formant/phi_func/to_acos_reg[11]/Q
-                         net (fo=1, routed)           0.510     6.079    my_dp_formant/phi_func/acos_calc/Q[10]
-    SLICE_X14Y72         LUT1 (Prop_lut1_I0_O)        0.124     6.203 r  my_dp_formant/phi_func/acos_calc/arbr_i_30__0/O
-                         net (fo=1, routed)           0.770     6.973    my_dp_formant/phi_func/acos_calc/mult_min/A[10]
-    DSP48_X0Y30          DSP48E1 (Prop_dsp48e1_A[10]_PCOUT[47])
-                                                      4.036    11.009 r  my_dp_formant/phi_func/acos_calc/mult_min/arbr/PCOUT[47]
-                         net (fo=1, routed)           0.002    11.011    my_dp_formant/phi_func/acos_calc/mult_min/arbr_n_106
-    DSP48_X0Y31          DSP48E1 (Prop_dsp48e1_PCIN[47]_P[6])
-                                                      1.518    12.529 r  my_dp_formant/phi_func/acos_calc/mult_min/arbr__0/P[6]
-                         net (fo=2, routed)           0.973    13.502    my_dp_formant/phi_func/acos_calc/P[0]
-    SLICE_X11Y71         LUT2 (Prop_lut2_I0_O)        0.124    13.626 r  my_dp_formant/phi_func/acos_calc/acos_out[11]_i_15/O
-                         net (fo=1, routed)           0.000    13.626    my_dp_formant_n_159
-    SLICE_X11Y71         CARRY4 (Prop_carry4_S[0]_CO[3])
-                                                      0.532    14.158 r  phi_func/acos_calc/acos_out_reg[11]_i_7/CO[3]
-                         net (fo=1, routed)           0.000    14.158    phi_func/acos_calc/acos_out_reg[11]_i_7_n_0
-    SLICE_X11Y72         CARRY4 (Prop_carry4_CI_CO[3])
-                                                      0.114    14.272 r  phi_func/acos_calc/acos_out_reg[11]_i_2/CO[3]
-                         net (fo=1, routed)           0.000    14.272    phi_func/acos_calc/acos_out_reg[11]_i_2_n_0
-    SLICE_X11Y73         CARRY4 (Prop_carry4_CI_CO[3])
-                                                      0.114    14.386 r  phi_func/acos_calc/acos_out_reg[11]_i_1/CO[3]
-                         net (fo=1, routed)           0.000    14.386    phi_func/acos_calc/acos_out_reg[11]_i_1_n_0
-    SLICE_X11Y74         CARRY4 (Prop_carry4_CI_CO[3])
-                                                      0.114    14.500 r  phi_func/acos_calc/acos_out_reg[15]_i_1/CO[3]
-                         net (fo=1, routed)           0.009    14.509    phi_func/acos_calc/acos_out_reg[15]_i_1_n_0
-    SLICE_X11Y75         CARRY4 (Prop_carry4_CI_CO[3])
-                                                      0.114    14.623 r  phi_func/acos_calc/acos_out_reg[19]_i_1/CO[3]
-                         net (fo=1, routed)           0.000    14.623    my_dp_formant/phi_func/acos_calc/CO[0]
-    SLICE_X11Y76         CARRY4 (Prop_carry4_CI_O[1])
-                                                      0.334    14.957 r  my_dp_formant/phi_func/acos_calc/acos_out_reg[23]_i_1/O[1]
-                         net (fo=1, routed)           0.000    14.957    my_dp_formant/phi_func/acos_calc/p_0_in[21]
-    SLICE_X11Y76         FDRE                                         r  my_dp_formant/phi_func/acos_calc/acos_out_reg[21]/D
+    SLICE_X8Y8           FDRE (Prop_fdre_C_Q)         0.478    -0.483 r  my_dp_formant/t_func/output_address_reg[5]__0/Q
+                         net (fo=496, routed)        11.735    11.253    my_dp_formant/genblk1[0].T_bram/BRAM_reg_0_63_12_14/ADDRD5
+    SLICE_X6Y96          RAMD64E                                      r  my_dp_formant/genblk1[0].T_bram/BRAM_reg_0_63_12_14/RAMA/WADR5
   -------------------------------------------------------------------    -------------------
 
-                         (clock gclk rise edge)      10.000    10.000 r  
-    N15                                               0.000    10.000 r  clk_100mhz (IN)
-                         net (fo=0)                   0.000    10.000    clk_100mhz
-    N15                  IBUF (Prop_ibuf_I_O)         1.370    11.370 r  clk_100mhz_IBUF_inst/O
-                         net (fo=1, routed)           1.868    13.238    clk_100mhz_IBUF
-    BUFGCTRL_X0Y0        BUFG (Prop_bufg_I_O)         0.091    13.329 r  clk_100mhz_IBUF_BUFG_inst/O
-                         net (fo=21599, routed)       1.426    14.755    my_dp_formant/phi_func/acos_calc/clk_100mhz_IBUF_BUFG
-    SLICE_X11Y76         FDRE                                         r  my_dp_formant/phi_func/acos_calc/acos_out_reg[21]/C
-                         clock pessimism              0.257    15.012    
-                         clock uncertainty           -0.035    14.976    
-    SLICE_X11Y76         FDRE (Setup_fdre_C_D)        0.062    15.038    my_dp_formant/phi_func/acos_calc/acos_out_reg[21]
+                         (clock clk_pixel_clk_wiz_0 rise edge)
+                                                     13.468    13.468 r  
+    N15                                               0.000    13.468 r  clk_100mhz (IN)
+                         net (fo=0)                   0.000    13.468    mhdmicw/clk_100mhz
+    N15                  IBUF (Prop_ibuf_I_O)         1.370    14.838 r  mhdmicw/clkin1_ibufg/O
+                         net (fo=1, routed)           1.162    16.000    mhdmicw/clk_ref_clk_wiz_0
+    MMCME2_ADV_X0Y0      MMCME2_ADV (Prop_mmcme2_adv_CLKIN1_CLKOUT0)
+                                                     -7.221     8.779 r  mhdmicw/mmcm_adv_inst/CLKOUT0
+                         net (fo=1, routed)           1.587    10.366    mhdmicw/clk_pixel_clk_wiz_0
+    BUFGCTRL_X0Y0        BUFG (Prop_bufg_I_O)         0.091    10.457 r  mhdmicw/clkout1_buf/O
+                         net (fo=21654, routed)       1.507    11.963    my_dp_formant/genblk1[0].T_bram/BRAM_reg_0_63_12_14/WCLK
+    SLICE_X6Y96          RAMD64E                                      r  my_dp_formant/genblk1[0].T_bram/BRAM_reg_0_63_12_14/RAMA/CLK
+                         clock pessimism              0.482    12.446    
+                         clock uncertainty           -0.168    12.278    
+    SLICE_X6Y96          RAMD64E (Setup_ramd64e_CLK_WADR5)
+                                                     -0.413    11.865    my_dp_formant/genblk1[0].T_bram/BRAM_reg_0_63_12_14/RAMA
   -------------------------------------------------------------------
-                         required time                         15.038    
-                         arrival time                         -14.957    
+                         required time                         11.865    
+                         arrival time                         -11.253    
   -------------------------------------------------------------------
-                         slack                                  0.082    
+                         slack                                  0.612    
 
 
 
